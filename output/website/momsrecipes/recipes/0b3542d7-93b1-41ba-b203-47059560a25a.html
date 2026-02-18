@@ -1,0 +1,2470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sand Backle - Mom's Recipes</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .edit-controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .edit-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .edit-btn-primary {
+            background: #8B4513;
+            color: white;
+        }
+        
+        .edit-btn-primary:hover {
+            background: #A0522D;
+        }
+        
+        .edit-btn-secondary {
+            background: #4A90E2;
+            color: white;
+        }
+        
+        .edit-btn-secondary:hover {
+            background: #357ABD;
+        }
+        
+        .edit-btn-success {
+            background: #27AE60;
+            color: white;
+        }
+        
+        .edit-btn-success:hover {
+            background: #229954;
+        }
+        
+        .edit-btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .edit-btn-cancel:hover {
+            background: #7f8c8d;
+        }
+        
+        .add-item-btn {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .add-item-btn:hover {
+            background: #357ABD;
+        }
+        
+        .no-image {
+            width: 100%;
+            height: 300px;
+            background: #f0e6d6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: #8B4513;
+            border-radius: 10px;
+        }
+        
+        .image-upload {
+            margin: 15px 0;
+        }
+        
+        .image-upload input[type="file"] {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        .message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .message-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Edit History Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-header {
+            background: #8B4513;
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        #confirm-delete-btn:hover {
+            background: #c82333 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220,53,69,0.4) !important;
+        }
+        
+        #cancel-delete-btn:hover {
+            background: #5a6268 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108,117,125,0.4) !important;
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .edit-log {
+            background: #f9f9f9;
+            border-radius: 5px;
+            padding: 20px;
+        }
+        
+        .edit-entry {
+            background: white;
+            padding: 15px;
+            border-left: 4px solid #8B4513;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .edit-entry-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .edit-entry-timestamp {
+            font-weight: bold;
+            color: #8B4513;
+        }
+        
+        .edit-entry-changes {
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .edit-entry-changes strong {
+            color: #8B4513;
+        }
+        
+        /* Multiple Images */
+        .recipe-image-top,
+        .recipe-image-bottom {
+            margin: 20px auto;
+            max-width: 1200px;
+            padding: 0 20px;
+            position: relative;
+        }
+        
+        .recipe-image-bottom {
+            text-align: center;
+        }
+        
+        .clickable-image {
+            width: 100%;
+            max-width: 800px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .clickable-image:hover {
+            transform: scale(1.02);
+        }
+        
+        .replace-image-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #ff69b4;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Ingredient/Direction Items */
+        .ingredient-item,
+        .direction-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #fff;
+            border: 2px solid #f0f0f0;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            list-style: none;
+            transition: all 0.3s;
+        }
+        
+        .ingredient-item:hover,
+        .direction-item:hover {
+            border-color: #ff69b4;
+            box-shadow: 0 2px 8px rgba(255, 105, 180, 0.2);
+        }
+        
+        .ingredient-item.dragging,
+        .direction-item.dragging {
+            opacity: 0.5;
+        }
+        
+        .drag-handle {
+            cursor: grab;
+            font-size: 1.2em;
+            color: #999;
+            user-select: none;
+        }
+        
+        .drag-handle:hover {
+            color: #ff69b4;
+        }
+        
+        .ingredient-text,
+        .direction-text {
+            flex: 1;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .ingredient-text:hover,
+        .direction-text:hover {
+            background: #fff9e6;
+            color: #ff69b4;
+        }
+        
+        .direction-number {
+            font-weight: bold;
+            color: #ff69b4;
+        }
+        
+        .ingredient-controls,
+        .direction-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .control-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .control-btn.edit-btn:hover {
+            background: #4A90E2;
+            color: white;
+        }
+        
+        .control-btn.delete-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .add-item-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #27AE60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Inline Edit Forms */
+        .inline-edit-form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            background: #fff9e6;
+            padding: 8px;
+            border-radius: 6px;
+            border: 2px solid #ff69b4;
+        }
+        
+        .inline-edit-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: inherit;
+            outline: none;
+        }
+        
+        .inline-edit-input:focus {
+            border-color: #ff69b4;
+            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1);
+        }
+        
+        .inline-edit-textarea {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: inherit;
+            min-height: 80px;
+            resize: vertical;
+            outline: none;
+        }
+        
+        .inline-edit-textarea:focus {
+            border-color: #ff69b4;
+            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1);
+        }
+        
+        .inline-save-btn {
+            background: #27AE60;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .inline-save-btn:hover {
+            background: #229954;
+            transform: scale(1.05);
+        }
+        
+        .inline-cancel-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .inline-cancel-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+        
+        /* Image Carousel */
+        .image-carousel {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .carousel-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .carousel-viewport {
+            flex: 1;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #f5f5f5;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        .carousel-track {
+            display: flex;
+            transition: transform 0.4s ease;
+            gap: 15px;
+            padding: 20px;
+        }
+        
+        .carousel-slide {
+            min-width: calc(50% - 7.5px);
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .carousel-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .carousel-image:hover {
+            transform: scale(1.02);
+        }
+        
+        .carousel-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #ff69b4;
+            cursor: pointer;
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff69b4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+        
+        .carousel-btn:hover {
+            background: #ff69b4;
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .carousel-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .carousel-btn:disabled:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.95);
+            color: #ff69b4;
+        }
+        
+        .carousel-indicators {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1.1em;
+            color: #666;
+        }
+        
+        .carousel-counter {
+            font-weight: bold;
+        }
+        
+        .replace-image-btn,
+        .delete-image-btn {
+            position: absolute;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 2px solid white;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .replace-image-btn {
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #4A90E2;
+            border-color: #4A90E2;
+        }
+        
+        .replace-image-btn:hover {
+            background: #4A90E2;
+            color: white;
+        }
+        
+        .delete-image-btn {
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+        
+        .delete-image-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .add-image-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 24px;
+            background: #27AE60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        
+        .add-image-btn:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+        
+        .no-images {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .no-image-placeholder {
+            background: white;
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .no-image-placeholder p {
+            font-size: 2em;
+            color: #999;
+            margin-bottom: 20px;
+        }
+        
+        /* Responsive Carousel */
+        @media (max-width: 768px) {
+            .carousel-slide {
+                min-width: 100%;
+            }
+            
+            .carousel-image {
+                height: 250px;
+            }
+            
+            .carousel-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.5em;
+            }
+        }
+        
+        /* Toast Messages */
+        .toast-message {
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Toast Messages */
+        .toast-message {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 10001;
+            transition: bottom 0.3s;
+        }
+        
+        .toast-message.show {
+            bottom: 30px;
+        }
+        
+        .toast-success {
+            background: #27AE60;
+        }
+    </style>
+</head>
+<body>
+    <div class="recipe-page">
+        <div class="recipe-header">
+            <a href="../" class="back-link">← Back to Search</a>
+            <h1 id="recipe-title" class="editable-title" contenteditable="false" title="Click to edit title">Sand Backle</h1>
+            <div class="source-field">
+                <label class="source-label">From:</label>
+                <span id="family-source" class="source editable-source" contenteditable="false" title="Click to edit source">July</span>
+            </div>
+            
+            <div class="meta-section">
+                <h3 class="meta-section-title">Recipe Details</h3>
+                <div class="meta-tags"><div class="meta-field"><label class="meta-label">Meal Type:</label><span class="meta-tag meal-type editable-meta empty" data-type="meal_type" title="Click to add">+ Meal Type</span></div><div class="meta-field"><label class="meta-label">Cuisine:</label><span class="meta-tag cuisine editable-meta empty" data-type="cuisine" title="Click to add">+ Cuisine</span></div><div class="meta-field"><label class="meta-label">Main Ingredient:</label><span class="meta-tag ingredient editable-meta empty" data-type="main_ingredient" title="Click to add">+ Main Ingredient</span></div><div class="meta-field"><label class="meta-label">Method:</label><span class="meta-tag method editable-meta empty" data-type="method" title="Click to add">+ Method</span></div></div>
+            </div>
+            
+            <div class="edit-controls">
+                <button class="edit-btn edit-btn-secondary" onclick="showEditHistory()">📝 View Edit History</button>
+            </div>
+            
+            <div id="message-area"></div>
+        </div>
+        
+        <!-- Image Carousel -->
+        
+            <div class="image-carousel">
+                <div class="carousel-container">
+                    <button class="carousel-btn carousel-prev" onclick="moveCarousel(-1)">‹</button>
+                    <div class="carousel-viewport">
+                        <div class="carousel-track" id="carousel-track">
+            
+                            <div class="carousel-slide">
+                                <img src="../images/Sand_Backle-1.png" 
+                                     alt="Sand Backle - Image 1" 
+                                     class="clickable-image carousel-image"
+                                     data-image-index="0">
+                                <button class="replace-image-btn" data-image-index="0">Replace</button>
+                                <button class="delete-image-btn" data-image-index="0">Delete</button>
+                            </div>
+                
+                        </div>
+                    </div>
+                    <button class="carousel-btn carousel-next" onclick="moveCarousel(1)">›</button>
+                </div>
+                <div class="carousel-indicators">
+                    <span class="carousel-counter">
+                        <span id="current-slide">1</span>-<span id="current-slide-end">2</span> 
+                        of <span id="total-slides">1</span>
+                    </span>
+                </div>
+                <button class="add-image-btn" onclick="addNewImage()">➕ Add Image</button>
+            </div>
+            
+        
+        <div class="recipe-content">
+            <div class="recipe-main">
+                
+                
+                <section class="recipe-section">
+                    <h2>Ingredients</h2>
+                    <ul class="ingredients" id="ingredients-list"><li>1 cup butter (cream)</li><li>1 cup sugar</li><li>1 beaten egg</li><li>1 teaspoon almond extract</li></ul>
+                    <button class="add-item-btn" id="add-ingredient-btn" onclick="addIngredient()">➕ Add Ingredient</button>
+                </section>
+                
+                <section class="recipe-section">
+                    <h2>Directions</h2>
+                    <ol class="directions" id="directions-list"><li>Mix well, add 2½ cups sifted flour, chill</li></ol>
+                    <button class="add-item-btn" id="add-direction-btn" onclick="addDirection()">➕ Add Direction</button>
+                </section>
+            </div>
+            
+            <div class="recipe-sidebar">
+                <h3>Quick Actions</h3>
+                <div class="sidebar-actions">
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">Click text to edit • Drag with ☰ to reorder</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Title Edit Modal -->
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px; padding: 30px; text-align: center; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <h2 style="color: #dc3545; margin: 0 0 20px 0; font-size: 1.8em;">⚠️ Confirm Delete</h2>
+            <p id="delete-message" style="font-size: 1.15em; margin: 0 0 30px 0; color: #555; line-height: 1.6;"></p>
+            <div class="modal-actions" style="display: flex; gap: 12px; justify-content: center;">
+                <button id="confirm-delete-btn" style="padding: 12px 28px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1em; transition: all 0.2s; box-shadow: 0 2px 8px rgba(220,53,69,0.3);">Delete</button>
+                <button id="cancel-delete-btn" style="padding: 12px 28px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1em; transition: all 0.2s; box-shadow: 0 2px 8px rgba(108,117,125,0.3);">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit History Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit History</h2>
+                <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="edit-log" id="edit-log">
+                    <!-- Edit history will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Store original recipe data
+        // RECIPE_ID is the permanent UUID for this recipe - stable even if title changes
+        const RECIPE_ID = '0b3542d7-93b1-41ba-b203-47059560a25a';
+        const originalRecipe = {"uuid": "0b3542d7-93b1-41ba-b203-47059560a25a", "id": "0b3542d7-93b1-41ba-b203-47059560a25a", "title": "Sand Backle", "family_source": "July", "ingredients": ["1 cup butter (cream)", "1 cup sugar", "1 beaten egg", "1 teaspoon almond extract"], "directions": ["Mix well, add 2\u00bd cups sifted flour, chill"], "notes": [], "meal_type": "", "cuisine": "", "main_ingredient": "", "method": "", "images": ["Sand_Backle-1.png"]};
+        let currentRecipe = {...originalRecipe};
+        
+        // Ensure recipe has UUID (for backward compatibility with old recipes)
+        if (!currentRecipe.uuid) {
+            currentRecipe.uuid = RECIPE_ID;
+        }
+        
+        // Load any saved edits from localStorage
+        function loadSavedRecipe() {
+            // Try new UUID-based key first
+            let saved = localStorage.getItem('momsrecipes_recipe_' + RECIPE_ID);
+            
+            // Fall back to old title-based key for backward compatibility
+            if (!saved) {
+                saved = localStorage.getItem('recipe_' + RECIPE_ID);
+            }
+            
+            if (saved) {
+                currentRecipe = JSON.parse(saved);
+                applyRecipeData(currentRecipe);
+            }
+        }
+        
+        // Apply recipe data to the page
+        function applyRecipeData(recipe) {
+            // Update title
+            if (recipe.title) {
+                const titleEl = document.getElementById('recipe-title');
+                if (titleEl) {
+                    titleEl.textContent = recipe.title;
+                    document.title = recipe.title + " - Mom's Recipes";
+                }
+            }
+            
+            // Update ingredients using display function (with controls)
+            if (typeof displayIngredients === 'function' && recipe.ingredients) {
+                displayIngredients(recipe.ingredients);
+            } else {
+                // Fallback to simple list
+                const ingredientsList = document.getElementById('ingredients-list');
+                if (ingredientsList && recipe.ingredients) {
+                    ingredientsList.innerHTML = recipe.ingredients.map(ing => 
+                        `<li>${escapeHtml(ing)}</li>`
+                    ).join('');
+                }
+            }
+            
+            // Update directions using display function (with controls)
+            if (typeof displayDirections === 'function' && recipe.directions) {
+                displayDirections(recipe.directions);
+            } else {
+                // Fallback to simple list
+                const directionsList = document.getElementById('directions-list');
+                if (directionsList && recipe.directions) {
+                    directionsList.innerHTML = recipe.directions.map(dir => 
+                        `<li>${escapeHtml(dir)}</li>`
+                    ).join('');
+                }
+            }
+            
+            // Update carousel images if present
+            if (recipe.images && recipe.images.length > 0) {
+                updateCarouselImages(recipe.images);
+            }
+            
+            // Update old single image if present (legacy support)
+            if (recipe.image && recipe.image !== originalRecipe.image) {
+                const imageEl = document.getElementById('recipe-image');
+                if (imageEl) {
+                    if (recipe.image.startsWith('data:')) {
+                        // Base64 image
+                        imageEl.outerHTML = `<img src="${recipe.image}" alt="${escapeHtml(recipe.title)}" id="recipe-image">`;
+                    } else {
+                        // URL image
+                        imageEl.outerHTML = `<img src="../images/${recipe.image}" alt="${escapeHtml(recipe.title)}" id="recipe-image">`;
+                    }
+                }
+            }
+            
+            // Update source field
+            const sourceEl = document.getElementById('family-source');
+            if (sourceEl) {
+                if (recipe.family_source) {
+                    sourceEl.textContent = recipe.family_source;
+                    sourceEl.classList.remove('empty');
+                } else {
+                    sourceEl.textContent = '+ Add Source';
+                    sourceEl.classList.add('empty');
+                }
+            }
+            
+            // Update meta tags display
+            if (typeof updateMetaTagsDisplay === 'function') {
+                updateMetaTagsDisplay(recipe);
+            }
+        }
+        
+        // Update carousel images
+        function updateCarouselImages(images) {
+            const carouselTrack = document.getElementById('carousel-track');
+            if (!carouselTrack) return;
+            
+            // Rebuild carousel with current images
+            carouselTrack.innerHTML = images.map((img, idx) => `
+                <div class="carousel-slide">
+                    <img src="${img.startsWith('data:') ? img : '../images/' + img}" 
+                         alt="Image ${idx + 1}" 
+                         class="clickable-image carousel-image"
+                         data-image-index="${idx}">
+                    <button class="replace-image-btn" data-image-index="${idx}">Replace</button>
+                    <button class="delete-image-btn" data-image-index="${idx}">Delete</button>
+                </div>
+            `).join('');
+            
+            // Update counter
+            const totalEl = document.getElementById('total-slides');
+            if (totalEl) {
+                totalEl.textContent = images.length;
+            }
+            
+            // Reinitialize carousel
+            currentSlideIndex = 0;
+            updateCarousel();
+            updateCarouselButtons();
+            setupCarouselButtons();
+        }
+
+        
+        // Save recipe to localStorage
+        function saveRecipe(recipe) {
+            try {
+                // Update currentRecipe
+                currentRecipe = recipe;
+                
+                // Save to localStorage with recipe ID
+                localStorage.setItem('momsrecipes_recipe_' + RECIPE_ID, JSON.stringify(recipe));
+                
+                // Also save with old format for compatibility
+                localStorage.setItem('recipe_' + RECIPE_ID, JSON.stringify(recipe));
+                
+                // Update last modified timestamp
+                const timestamp = new Date().toISOString();
+                const currentUser = localStorage.getItem('momsrecipes_current_user');
+                let userData = null;
+                if (currentUser) {
+                    try {
+                        userData = JSON.parse(currentUser);
+                    } catch(e) {
+                        userData = { username: currentUser };
+                    }
+                }
+                
+                recipe.lastModified = timestamp;
+                recipe.lastModifiedBy = userData ? userData.username : 'anonymous';
+                
+                // Apply changes to page immediately
+                applyRecipeData(recipe);
+                
+                console.log('Recipe saved:', RECIPE_ID);
+                return true;
+            } catch (error) {
+                console.error('Error saving recipe:', error);
+                showMessage('Error saving changes: ' + error.message, 'error');
+                return false;
+            }
+        }
+        
+        // Log edit to history
+        function logEdit(changes, changeDetails) {
+            const history = JSON.parse(localStorage.getItem('recipe_history_' + RECIPE_ID) || '[]');
+            const now = new Date();
+            
+            // Get current logged-in user
+            const currentUser = localStorage.getItem('momsrecipes_current_user');
+            let username = 'User';
+            if (currentUser) {
+                const user = JSON.parse(currentUser);
+                username = user.fullname || user.username;
+            }
+            
+            history.unshift({
+                timestamp: now.toISOString(),
+                formatted_time: now.toLocaleString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric', 
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                }),
+                changes: changes,
+                changeDetails: changeDetails || [],
+                user: username
+            });
+            
+            // Keep last 50 edits
+            if (history.length > 50) {
+                history.length = 50;
+            }
+            
+            localStorage.setItem('recipe_history_' + RECIPE_ID, JSON.stringify(history));
+        }
+        
+        // Show edit history
+        function showEditHistory() {
+            const history = JSON.parse(localStorage.getItem('recipe_history_' + RECIPE_ID) || '[]');
+            const logEl = document.getElementById('edit-log');
+            
+            if (history.length === 0) {
+                logEl.innerHTML = '<p style="text-align:center;color:#999;">No edit history yet</p>';
+            } else {
+                logEl.innerHTML = history.map(entry => {
+                    let changesHtml = '';
+                    
+                    // Check if we have detailed change information
+                    if (entry.changeDetails && entry.changeDetails.length > 0) {
+                        changesHtml = entry.changeDetails.map(detail => {
+                            let detailHtml = `<div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px;">`;
+                            detailHtml += `<strong style="color: #8B4513;">${detail.summary}</strong>`;
+                            
+                            if (detail.details && detail.details.length > 0) {
+                                detailHtml += '<ul style="margin: 10px 0; padding-left: 20px;">';
+                                detail.details.forEach(d => {
+                                    detailHtml += `<li style="margin: 5px 0;">${escapeHtml(d)}</li>`;
+                                });
+                                detailHtml += '</ul>';
+                            }
+                            
+                            // Show before/after if available
+                            if (detail.before && detail.after) {
+                                if (Array.isArray(detail.before) && Array.isArray(detail.after)) {
+                                    // For ingredients and directions
+                                    if (detail.before.length > 0 || detail.after.length > 0) {
+                                        detailHtml += '<div style="margin-top: 10px; font-size: 0.9em;">';
+                                        
+                                        if (detail.before.length > 0 && detail.before.length <= 5) {
+                                            detailHtml += '<div style="margin: 5px 0;"><strong>Before:</strong></div>';
+                                            detailHtml += '<ul style="margin: 5px 0; padding-left: 20px; color: #c00;">';
+                                            detail.before.forEach(item => {
+                                                detailHtml += `<li style="text-decoration: line-through;">${escapeHtml(item)}</li>`;
+                                            });
+                                            detailHtml += '</ul>';
+                                        }
+                                        
+                                        if (detail.after.length > 0 && detail.after.length <= 5) {
+                                            detailHtml += '<div style="margin: 5px 0;"><strong>After:</strong></div>';
+                                            detailHtml += '<ul style="margin: 5px 0; padding-left: 20px; color: #070;">';
+                                            detail.after.forEach(item => {
+                                                detailHtml += `<li>${escapeHtml(item)}</li>`;
+                                            });
+                                            detailHtml += '</ul>';
+                                        }
+                                        
+                                        detailHtml += '</div>';
+                                    }
+                                } else {
+                                    // For image or other changes
+                                    detailHtml += '<div style="margin-top: 10px; font-size: 0.9em;">';
+                                    detailHtml += `<div><strong>Before:</strong> ${escapeHtml(detail.before)}</div>`;
+                                    detailHtml += `<div style="margin-top: 5px;"><strong>After:</strong> ${escapeHtml(detail.after)}</div>`;
+                                    detailHtml += '</div>';
+                                }
+                            }
+                            
+                            detailHtml += '</div>';
+                            return detailHtml;
+                        }).join('');
+                    } else {
+                        // Legacy format (just summary changes)
+                        changesHtml = '<strong>Changes:</strong><ul>';
+                        changesHtml += entry.changes.map(c => `<li>${escapeHtml(c)}</li>`).join('');
+                        changesHtml += '</ul>';
+                    }
+                    
+                    return `
+                        <div class="edit-entry">
+                            <div class="edit-entry-header">
+                                <span class="edit-entry-timestamp">${entry.formatted_time}</span>
+                                <span>by ${entry.user}</span>
+                            </div>
+                            <div class="edit-entry-changes">
+                                ${changesHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            document.getElementById('history-modal').classList.add('active');
+        }
+        
+        // Close history modal
+        function closeHistoryModal() {
+            document.getElementById('history-modal').classList.remove('active');
+        }
+        
+        // Show message
+        function showMessage(text, type) {
+            const area = document.getElementById('message-area');
+            area.innerHTML = `<div class="message message-${type}">${text}</div>`;
+            setTimeout(() => area.innerHTML = '', 5000);
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Image zoom functionality - open in new tab
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click handler to recipe image (legacy support)
+            const recipeImage = document.getElementById('recipe-image');
+            if (recipeImage && recipeImage.tagName === 'IMG') {
+                recipeImage.style.cursor = 'pointer';
+                recipeImage.addEventListener('click', function() {
+                    window.open(this.src, '_blank');
+                });
+            }
+        });
+        
+        // ====================================================================
+        // NEW FEATURES: Carousel, Title Editing, Reordering, Multiple Images
+        // ====================================================================
+        
+        // Carousel State
+        let currentSlideIndex = 0;
+        let imagesPerView = 2;
+        
+        // Initialize Carousel
+        function initCarousel() {
+            updateCarousel();
+            updateCarouselButtons();
+        }
+        
+        function moveCarousel(direction) {
+            const track = document.getElementById('carousel-track');
+            if (!track) return;
+            
+            const slides = track.querySelectorAll('.carousel-slide');
+            const totalSlides = slides.length;
+            const maxIndex = Math.max(0, totalSlides - imagesPerView);
+            
+            // Update index
+            currentSlideIndex += direction;
+            currentSlideIndex = Math.max(0, Math.min(currentSlideIndex, maxIndex));
+            
+            updateCarousel();
+            updateCarouselButtons();
+        }
+        
+        function updateCarousel() {
+            const track = document.getElementById('carousel-track');
+            if (!track) return;
+            
+            const slides = track.querySelectorAll('.carousel-slide');
+            if (slides.length === 0) return;
+            
+            // Calculate slide width (50% of viewport width)
+            const slideWidth = slides[0].offsetWidth;
+            const gap = 15; // Gap between slides
+            
+            // Move track
+            const offset = -(currentSlideIndex * (slideWidth + gap));
+            track.style.transform = `translateX(${offset}px)`;
+            
+            // Update counter
+            const totalSlides = slides.length;
+            const currentStart = currentSlideIndex + 1;
+            const currentEnd = Math.min(currentSlideIndex + imagesPerView, totalSlides);
+            
+            const currentEl = document.getElementById('current-slide');
+            const currentEndEl = document.getElementById('current-slide-end');
+            const totalEl = document.getElementById('total-slides');
+            
+            if (currentEl) currentEl.textContent = currentStart;
+            if (currentEndEl) currentEndEl.textContent = currentEnd;
+            if (totalEl) totalEl.textContent = totalSlides;
+        }
+        
+        function updateCarouselButtons() {
+            const prevBtn = document.querySelector('.carousel-prev');
+            const nextBtn = document.querySelector('.carousel-next');
+            const track = document.getElementById('carousel-track');
+            
+            if (!track || !prevBtn || !nextBtn) return;
+            
+            const slides = track.querySelectorAll('.carousel-slide');
+            const totalSlides = slides.length;
+            const maxIndex = Math.max(0, totalSlides - imagesPerView);
+            
+            // Disable buttons at ends
+            prevBtn.disabled = currentSlideIndex <= 0;
+            nextBtn.disabled = currentSlideIndex >= maxIndex;
+        }
+        
+        // Add New Image
+        function addNewImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    // Add to recipe images array
+                    if (!currentRecipe.images) {
+                        currentRecipe.images = [];
+                    }
+                    
+                    const imageNum = currentRecipe.images.length + 1;
+                    const imageData = event.target.result;
+                    
+                    // For now, store as base64 - in real deployment would upload to server
+                    currentRecipe.images.push(imageData);
+                    
+                    // Save recipe
+                    saveRecipe(currentRecipe);
+                    
+                    // Reload page to show new carousel
+                    location.reload();
+                };
+                reader.readAsDataURL(file);
+            };
+            
+            input.click();
+        }
+        
+        // Replace Image in Carousel
+        function replaceCarouselImage(index) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    // Update image in recipe
+                    if (currentRecipe.images && currentRecipe.images[index]) {
+                        currentRecipe.images[index] = event.target.result;
+                        saveRecipe(currentRecipe);
+                        
+                        // Update image in DOM
+                        const img = document.querySelector(`[data-image-index="${index}"]`);
+                        if (img && img.tagName === 'IMG') {
+                            img.src = event.target.result;
+                        }
+                        
+                        showToast('Image replaced!', 'success');
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+            
+            input.click();
+        }
+        
+        // Delete Image from Carousel
+        function deleteCarouselImage(index) {
+            if (!confirm('Delete this image?')) return;
+            
+            if (currentRecipe.images && currentRecipe.images[index]) {
+                currentRecipe.images.splice(index, 1);
+                saveRecipe(currentRecipe);
+                
+                // Reload to update carousel
+                location.reload();
+            }
+        }
+        
+        // Setup carousel image buttons
+        function setupCarouselButtons() {
+            // Replace buttons
+            document.querySelectorAll('.replace-image-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const index = parseInt(this.dataset.imageIndex);
+                    replaceCarouselImage(index);
+                });
+            });
+            
+            // Delete buttons
+            document.querySelectorAll('.delete-image-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const index = parseInt(this.dataset.imageIndex);
+                    deleteCarouselImage(index);
+                });
+            });
+            
+            // Clickable images for zoom
+            document.querySelectorAll('.clickable-image').forEach(img => {
+                img.addEventListener('click', function() {
+                    zoomImage(this.src);
+                });
+            });
+        }
+        
+        // Zoom Image (full screen)
+        function zoomImage(src) {
+            // Open image in new tab instead of overlay
+            window.open(src, '_blank');
+        }
+        
+        // Responsive: adjust images per view
+        function updateImagesPerView() {
+            if (window.innerWidth <= 768) {
+                imagesPerView = 1;
+            } else {
+                imagesPerView = 2;
+            }
+            updateCarousel();
+            updateCarouselButtons();
+        }
+        
+        window.addEventListener('resize', updateImagesPerView);
+        
+        // Title Editing - Inline with contenteditable
+        function initTitleEditing() {
+            const titleElement = document.getElementById('recipe-title');
+            let originalTitle = '';
+            
+            // Click to enable editing
+            titleElement.addEventListener('click', function() {
+                if (titleElement.getAttribute('contenteditable') === 'false') {
+                    originalTitle = titleElement.textContent.trim();
+                    titleElement.setAttribute('contenteditable', 'true');
+                    titleElement.focus();
+                    
+                    // Select all text
+                    const range = document.createRange();
+                    range.selectNodeContents(titleElement);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            });
+            
+            // Handle Enter key to save
+            titleElement.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    titleElement.blur();
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    titleElement.textContent = originalTitle;
+                    titleElement.setAttribute('contenteditable', 'false');
+                    titleElement.blur();
+                }
+            });
+            
+            // Save on blur
+            titleElement.addEventListener('blur', function() {
+                const newTitle = titleElement.textContent.trim();
+                
+                // Revert if empty
+                if (!newTitle) {
+                    titleElement.textContent = originalTitle;
+                    titleElement.setAttribute('contenteditable', 'false');
+                    return;
+                }
+                
+                // No change, just disable editing
+                if (newTitle === originalTitle) {
+                    titleElement.setAttribute('contenteditable', 'false');
+                    return;
+                }
+                
+                // Title changed - save it and rename files
+                const oldTitle = originalTitle;
+                const currentUser = localStorage.getItem('momsrecipes_current_user');
+                let userData = currentUser ? JSON.parse(currentUser) : null;
+                const username = userData ? (userData.fullname || userData.username) : 'Anonymous';
+                
+                const changelog = {
+                    from: oldTitle,
+                    to: newTitle,
+                    date: new Date().toISOString(),
+                    user: username,
+                    recipeUUID: currentRecipe.uuid || RECIPE_ID,
+                    recipeName: oldTitle
+                };
+                
+                // Save to recipe-specific changelog using UUID
+                const allChanges = JSON.parse(localStorage.getItem('momsrecipes_title_changelog') || '{}');
+                const recipeUUID = currentRecipe.uuid || RECIPE_ID;
+                if (!allChanges[recipeUUID]) allChanges[recipeUUID] = [];
+                allChanges[recipeUUID].push(changelog);
+                localStorage.setItem('momsrecipes_title_changelog', JSON.stringify(allChanges));
+                
+                // Save to MASTER title changelog
+                const masterLog = JSON.parse(localStorage.getItem('momsrecipes_master_title_log') || '[]');
+                masterLog.unshift({
+                    from: oldTitle,
+                    to: newTitle,
+                    date: new Date().toISOString(),
+                    formatted_time: new Date().toLocaleString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    }),
+                    user: username,
+                    recipeUUID: recipeUUID,
+                    recipeUrl: window.location.pathname,
+                    oldFilename: currentRecipe.filename || window.location.pathname.split('/').pop(),
+                    newFilename: null  // Will be set after rename
+                });
+                
+                if (masterLog.length > 100) {
+                    masterLog.length = 100;
+                }
+                localStorage.setItem('momsrecipes_master_title_log', JSON.stringify(masterLog));
+                
+                // Log to individual recipe edit history
+                logEdit(
+                    ['Edited title'],
+                    [createChangeDetail(
+                        'title',
+                        'Edited title',
+                        [`Changed title from "${oldTitle}" to "${newTitle}"`],
+                        [oldTitle],
+                        [newTitle]
+                    )]
+                );
+                
+                // Update recipe and save
+                currentRecipe.title = newTitle;
+                saveRecipe(currentRecipe);
+                
+                // Disable editing
+                titleElement.setAttribute('contenteditable', 'false');
+                
+                // Create redirect from old filename to new filename
+                createRedirectForRename(oldTitle, newTitle);
+                
+                showToast('Title updated! Files will be renamed on next site generation.', 'success');
+            });
+        }
+        
+        // Create redirect entry for renamed recipe
+        function createRedirectForRename(oldTitle, newTitle) {
+            const redirects = JSON.parse(localStorage.getItem('momsrecipes_redirects') || '{}');
+            const oldSlug = slugify(oldTitle);
+            const newSlug = slugify(newTitle);
+            
+            if (oldSlug !== newSlug) {
+                redirects[oldSlug] = newSlug;
+                localStorage.setItem('momsrecipes_redirects', JSON.stringify(redirects));
+            }
+        }
+        
+        // Slugify function for creating URL-safe filenames
+        function slugify(text) {
+            return text
+                .toString()
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+        }
+        
+        // Family Source Editing
+        const sourceElement = document.getElementById('family-source');
+        if (sourceElement) {
+            sourceElement.addEventListener('click', function() {
+                if (this.getAttribute('contenteditable') === 'false') {
+                    const oldSource = this.textContent.trim();
+                    
+                    // Enable editing
+                    this.setAttribute('contenteditable', 'true');
+                    this.classList.remove('empty');
+                    
+                    // Select all text for easy replacement
+                    if (oldSource !== '+ Add Source') {
+                        const range = document.createRange();
+                        range.selectNodeContents(this);
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    } else {
+                        this.textContent = '';
+                    }
+                    
+                    this.focus();
+                }
+            });
+            
+            sourceElement.addEventListener('blur', function() {
+                const newSource = this.textContent.trim();
+                const oldSource = currentRecipe.family_source || '';
+                
+                if (newSource && newSource !== oldSource) {
+                    // Log the change
+                    logEdit(
+                        ['Edited source attribution'],
+                        [createChangeDetail(
+                            'family_source',
+                            'Changed source attribution',
+                            [`Changed from "${oldSource || '(none)'}" to "${newSource}"`],
+                            [oldSource],
+                            [newSource]
+                        )]
+                    );
+                    
+                    // Update recipe
+                    currentRecipe.family_source = newSource;
+                    saveRecipe(currentRecipe);
+                    
+                    showToast('Source updated!', 'success');
+                } else if (!newSource) {
+                    // Restore original or show placeholder
+                    if (oldSource) {
+                        this.textContent = oldSource;
+                    } else {
+                        this.textContent = '+ Add Source';
+                        this.classList.add('empty');
+                    }
+                }
+                
+                // Disable editing
+                this.setAttribute('contenteditable', 'false');
+            });
+            
+            sourceElement.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.blur();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    const oldSource = currentRecipe.family_source || '';
+                    this.textContent = oldSource || '+ Add Source';
+                    if (!oldSource) {
+                        this.classList.add('empty');
+                    }
+                    this.blur();
+                }
+            });
+        }
+        
+        // Meta Tag Editing
+        const META_OPTIONS = {
+            meal_type: [
+                'Breakfast',
+                'Lunch',
+                'Dinner',
+                'Dessert',
+                'Snack',
+                'Appetizer',
+                'Side Dish',
+                'Beverage'
+            ],
+            cuisine: [
+                'American',
+                'Italian',
+                'Mexican',
+                'Chinese',
+                'Japanese',
+                'French',
+                'Indian',
+                'Thai',
+                'Mediterranean',
+                'Greek',
+                'Spanish',
+                'Middle Eastern',
+                'Scandinavian',
+                'German',
+                'Other'
+            ],
+            main_ingredient: [
+                'Chicken',
+                'Beef',
+                'Pork',
+                'Fish',
+                'Seafood',
+                'Vegetables',
+                'Pasta',
+                'Rice',
+                'Beans',
+                'Eggs',
+                'Cheese',
+                'Bread',
+                'Fruit',
+                'Nuts',
+                'Other'
+            ],
+            method: [
+                'Baked',
+                'Fried',
+                'Grilled',
+                'Roasted',
+                'Steamed',
+                'Boiled',
+                'Sautéed',
+                'Slow Cooker',
+                'Pressure Cooker',
+                'No-Bake',
+                'Raw',
+                'Other'
+            ]
+        };
+        
+        // Load custom meta options from localStorage
+        function getCustomMetaOptions(type) {
+            const customOptions = JSON.parse(localStorage.getItem('momsrecipes_custom_meta_options') || '{}');
+            return customOptions[type] || [];
+        }
+        
+        // Save custom meta option
+        function saveCustomMetaOption(type, value) {
+            const customOptions = JSON.parse(localStorage.getItem('momsrecipes_custom_meta_options') || '{}');
+            if (!customOptions[type]) {
+                customOptions[type] = [];
+            }
+            
+            // Add if not already present
+            if (!customOptions[type].includes(value) && !META_OPTIONS[type].includes(value)) {
+                customOptions[type].push(value);
+                customOptions[type].sort(); // Keep alphabetically sorted
+                localStorage.setItem('momsrecipes_custom_meta_options', JSON.stringify(customOptions));
+                
+                // Trigger custom event to update filters on main page
+                window.dispatchEvent(new CustomEvent('customMetaOptionAdded', { 
+                    detail: { type, value }
+                }));
+            }
+        }
+        
+        // Get all options (built-in + custom) for a type
+        function getAllMetaOptions(type) {
+            const builtIn = META_OPTIONS[type] || [];
+            const custom = getCustomMetaOptions(type);
+            return [...builtIn, ...custom].sort();
+        }
+        
+        function initMetaTagEditing() {
+            document.querySelectorAll('.editable-meta').forEach(tag => {
+                // Remove any existing listeners by cloning
+                const newTag = tag.cloneNode(true);
+                tag.replaceWith(newTag);
+                
+                newTag.addEventListener('click', function() {
+                    const type = this.dataset.type;
+                    const currentValue = this.classList.contains('empty') ? '' : this.textContent.trim();
+                    
+                    // Create dropdown
+                    const select = document.createElement('select');
+                    select.className = 'meta-select';
+                    
+                    // Add empty option
+                    const emptyOption = document.createElement('option');
+                    emptyOption.value = '';
+                    emptyOption.textContent = '-- Select --';
+                    select.appendChild(emptyOption);
+                    
+                    // Add all options (built-in + custom)
+                    const allOptions = getAllMetaOptions(type);
+                    allOptions.forEach(option => {
+                        const opt = document.createElement('option');
+                        opt.value = option;
+                        opt.textContent = option;
+                        if (option === currentValue) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    });
+                    
+                    // Add "Add Custom..." option at the end
+                    const customOption = document.createElement('option');
+                    customOption.value = '__custom__';
+                    customOption.textContent = '➕ Add Custom...';
+                    customOption.style.fontWeight = 'bold';
+                    customOption.style.color = '#ff69b4';
+                    select.appendChild(customOption);
+                    
+                    // Replace tag with select
+                    this.replaceWith(select);
+                    select.focus();
+                    
+                    // Handle selection
+                    select.addEventListener('change', function() {
+                        // Set saved flag IMMEDIATELY to prevent blur from interfering
+                        this.dataset.saved = 'true';
+                        
+                        const newValue = this.value;
+                        
+                        if (newValue === '__custom__') {
+                            // Show custom input
+                            showCustomMetaInput(type, currentValue, select);
+                        } else {
+                            updateMetaTag(type, newValue, currentValue, select);
+                        }
+                    });
+                    
+                    // Handle blur without selection - add small delay
+                    select.addEventListener('blur', function() {
+                        setTimeout(() => {
+                            if (!this.dataset.saved) {
+                                // Restore original tag
+                                restoreMetaTag(type, currentValue, select);
+                            }
+                        }, 50);
+                    });
+                });
+            });
+        }
+        
+        function showCustomMetaInput(type, currentValue, selectElement) {
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'meta-select';
+            input.placeholder = 'Enter custom value...';
+            input.style.minWidth = '200px';
+            
+            // Replace select with input
+            selectElement.replaceWith(input);
+            input.focus();
+            
+            // Handle Enter key
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    // Set saved flag IMMEDIATELY to prevent blur from interfering
+                    this.dataset.saved = 'true';
+                    
+                    const customValue = this.value.trim();
+                    if (customValue) {
+                        // Save custom option for future use
+                        saveCustomMetaOption(type, customValue);
+                        
+                        // Update the tag with custom value
+                        updateMetaTag(type, customValue, currentValue, input);
+                    } else {
+                        restoreMetaTag(type, currentValue, input);
+                    }
+                } else if (e.key === 'Escape') {
+                    this.dataset.saved = 'true'; // Prevent blur from saving
+                    restoreMetaTag(type, currentValue, input);
+                }
+            });
+            
+            // Handle blur - add slight delay to let Enter/Escape handlers complete first
+            input.addEventListener('blur', function() {
+                // Wait a tick to let any keydown handlers complete
+                setTimeout(() => {
+                    if (!this.dataset.saved) {
+                        this.dataset.saved = 'true';
+                        const customValue = this.value.trim();
+                        if (customValue) {
+                            // Save custom option for future use
+                            saveCustomMetaOption(type, customValue);
+                            
+                            // Update the tag with custom value
+                            updateMetaTag(type, customValue, currentValue, input);
+                        } else {
+                            restoreMetaTag(type, currentValue, input);
+                        }
+                    }
+                }, 50); // 50ms delay to let other handlers finish
+            });
+        }
+        
+        function updateMetaTag(type, value, oldValue, selectElement) {
+            // Mark as saved to prevent blur from reverting
+            selectElement.dataset.saved = 'true';
+            
+            // Update recipe data
+            currentRecipe[type] = value;
+            
+            // Save recipe
+            saveRecipe(currentRecipe);
+            
+            // Log edit
+            const displayType = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            logEdit(
+                [`Edited ${displayType}`],
+                [createChangeDetail(
+                    type,
+                    `Changed ${displayType}`,
+                    [`Changed from "${oldValue || '(empty)'}" to "${value || '(empty)'}"`],
+                    [oldValue || ''],
+                    [value || '']
+                )]
+            );
+            
+            // Create new tag WITH PROPER COLOR CLASS
+            const newTag = document.createElement('span');
+            const cssClass = type.replace(/_/g, '-');
+            newTag.className = `meta-tag ${cssClass} editable-meta`;
+            newTag.dataset.type = type;
+            newTag.title = 'Click to edit';
+            
+            if (value) {
+                newTag.textContent = value;
+                // Add subtle border to show it has a value
+                newTag.style.border = '2px solid rgba(255, 255, 255, 0.6)';
+                newTag.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
+            } else {
+                newTag.classList.add('empty');
+                newTag.textContent = `+ ${displayType}`;
+            }
+            
+            // Replace select with new tag
+            selectElement.replaceWith(newTag);
+            
+            // Re-initialize editing for this tag
+            initMetaTagEditing();
+            
+            showToast(`${displayType} updated!`, 'success');
+        }
+        
+        function restoreMetaTag(type, value, selectElement) {
+            const tag = document.createElement('span');
+            const cssClass = type.replace(/_/g, '-');
+            tag.className = `meta-tag ${cssClass} editable-meta`;
+            tag.dataset.type = type;
+            tag.title = 'Click to edit';
+            
+            if (value) {
+                tag.textContent = value;
+                // Add subtle border to show it has a value
+                tag.style.border = '2px solid rgba(255, 255, 255, 0.6)';
+                tag.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
+            } else {
+                const displayType = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                tag.classList.add('empty');
+                tag.textContent = `+ ${displayType}`;
+            }
+            
+            selectElement.replaceWith(tag);
+            
+            // Re-initialize editing for this tag
+            initMetaTagEditing();
+        }
+        
+        function updateMetaTagsDisplay(recipe) {
+            // Update all meta tag displays
+            const metaTags = document.querySelectorAll('.editable-meta');
+            metaTags.forEach(tag => {
+                const type = tag.dataset.type;
+                const value = recipe[type];
+                const displayType = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                if (value) {
+                    tag.textContent = value;
+                    tag.classList.remove('empty');
+                } else {
+                    tag.textContent = `+ ${displayType}`;
+                    tag.classList.add('empty');
+                }
+            });
+        }
+        
+        // Ingredient Reordering
+        function displayIngredients(ingredients) {
+            const list = document.getElementById('ingredients-list');
+            if (!list) return;
+            
+            list.innerHTML = ingredients.map((ing, index) => `
+                <li class="ingredient-item" data-index="${index}" draggable="true">
+                    <span class="drag-handle">☰</span>
+                    <span class="ingredient-text" onclick="editIngredient(${index})" style="cursor: pointer; flex: 1;">${escapeHtml(ing)}</span>
+                    <div class="ingredient-controls">
+                        <button class="control-btn delete-btn" onclick="deleteIngredient(${index})">🗑️</button>
+                    </div>
+                </li>
+            `).join('');
+            
+            setupDragAndDrop('ingredients');
+        }
+        
+        // Helper function to create proper change detail objects
+        function createChangeDetail(type, summary, details, before, after) {
+            return {
+                type: type,
+                summary: summary,
+                details: details || [],
+                before: before,
+                after: after
+            };
+        }
+        
+        function moveIngredientUp(index) {
+            if (index === 0) return;
+            const ingredients = [...currentRecipe.ingredients];
+            const oldValue = ingredients[index];
+            const newValue = ingredients[index - 1];
+            
+            // Swap
+            [ingredients[index - 1], ingredients[index]] = [ingredients[index], ingredients[index - 1]];
+            currentRecipe.ingredients = ingredients;
+            
+            // Log the change with proper format
+            logEdit(
+                ['Reordered ingredient'],
+                [createChangeDetail(
+                    'ingredient',
+                    'Reordered ingredient',
+                    [`Moved "${oldValue}" from position ${index + 1} to ${index}`],
+                    ingredients,  // Show final order
+                    ingredients
+                )]
+            );
+            
+            saveRecipe(currentRecipe);
+            displayIngredients(ingredients);
+            showToast('Moved up', 'success');
+        }
+        
+        function moveIngredientDown(index) {
+            const ingredients = [...currentRecipe.ingredients];
+            if (index === ingredients.length - 1) return;
+            const oldValue = ingredients[index];
+            
+            // Swap
+            [ingredients[index], ingredients[index + 1]] = [ingredients[index + 1], ingredients[index]];
+            currentRecipe.ingredients = ingredients;
+            
+            // Log the change with proper format
+            logEdit(
+                ['Reordered ingredient'],
+                [createChangeDetail(
+                    'ingredient',
+                    'Reordered ingredient',
+                    [`Moved "${oldValue}" from position ${index + 1} to ${index + 2}`],
+                    ingredients,
+                    ingredients
+                )]
+            );
+            
+            saveRecipe(currentRecipe);
+            displayIngredients(ingredients);
+            showToast('Moved down', 'success');
+        }
+        
+        function editIngredient(index) {
+            const list = document.getElementById('ingredients-list');
+            const item = list.children[index];
+            if (!item) return;
+            
+            const textSpan = item.querySelector('.ingredient-text');
+            const oldValue = currentRecipe.ingredients[index];
+            
+            // Create inline edit form
+            const editForm = document.createElement('div');
+            editForm.className = 'inline-edit-form';
+            editForm.innerHTML = `
+                <input type="text" class="inline-edit-input" value="${escapeHtml(oldValue)}" />
+                <button class="inline-save-btn" title="Save">✓</button>
+                <button class="inline-cancel-btn" title="Cancel">✗</button>
+            `;
+            
+            // Replace text with edit form
+            textSpan.replaceWith(editForm);
+            const input = editForm.querySelector('.inline-edit-input');
+            input.focus();
+            input.select();
+            
+            // Save function
+            const save = () => {
+                const newValue = input.value.trim();
+                if (newValue && newValue !== oldValue) {
+                    const before = [...currentRecipe.ingredients];
+                    currentRecipe.ingredients[index] = newValue;
+                    const after = [...currentRecipe.ingredients];
+                    
+                    logEdit(
+                        ['Edited ingredient'],
+                        [createChangeDetail(
+                            'ingredient',
+                            'Edited ingredient',
+                            [`Changed "${oldValue}" to "${newValue}"`],
+                            [oldValue],
+                            [newValue]
+                        )]
+                    );
+                    
+                    saveRecipe(currentRecipe);
+                    displayIngredients(currentRecipe.ingredients);
+                } else {
+                    displayIngredients(currentRecipe.ingredients);
+                }
+            };
+            
+            // Cancel function
+            const cancel = () => {
+                displayIngredients(currentRecipe.ingredients);
+            };
+            
+            // Event listeners
+            editForm.querySelector('.inline-save-btn').addEventListener('click', save);
+            editForm.querySelector('.inline-cancel-btn').addEventListener('click', cancel);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') save();
+                if (e.key === 'Escape') cancel();
+            });
+        }
+        
+        // Delete confirmation modal
+        function showDeleteConfirmation(message, onConfirm) {
+            const modal = document.getElementById('delete-modal');
+            const messageEl = document.getElementById('delete-message');
+            const confirmBtn = document.getElementById('confirm-delete-btn');
+            const cancelBtn = document.getElementById('cancel-delete-btn');
+            
+            messageEl.textContent = message;
+            modal.classList.add('active');
+            
+            // Remove old listeners
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            // Add new listeners
+            newConfirmBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+                onConfirm();
+            });
+            
+            newCancelBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        }
+        
+        function deleteIngredient(index) {
+            const oldValue = currentRecipe.ingredients[index];
+            showDeleteConfirmation(
+                `Delete "${oldValue}"?`,
+                () => {
+                    const before = [...currentRecipe.ingredients];
+                    currentRecipe.ingredients.splice(index, 1);
+                    const after = [...currentRecipe.ingredients];
+                    
+                    // Log the change with proper format
+                    logEdit(
+                        ['Deleted ingredient'],
+                        [createChangeDetail(
+                            'ingredient',
+                            'Deleted ingredient',
+                            [`Removed "${oldValue}"`],
+                            [oldValue],
+                            []
+                        )]
+                    );
+                    
+                    saveRecipe(currentRecipe);
+                    displayIngredients(currentRecipe.ingredients);
+                    showToast('Ingredient deleted', 'success');
+                }
+            );
+        }
+        
+        function addIngredient() {
+            const list = document.getElementById('ingredients-list');
+            
+            // Add empty ingredient at the end
+            currentRecipe.ingredients.push('');
+            const newIndex = currentRecipe.ingredients.length - 1;
+            
+            // Redisplay to show new empty item
+            displayIngredients(currentRecipe.ingredients);
+            
+            // Immediately start editing the new item
+            setTimeout(() => {
+                const newItem = list.children[newIndex];
+                if (!newItem) return;
+                
+                const textSpan = newItem.querySelector('.ingredient-text');
+                
+                // Create inline edit form
+                const editForm = document.createElement('div');
+                editForm.className = 'inline-edit-form';
+                editForm.innerHTML = `
+                    <input type="text" class="inline-edit-input" placeholder="Enter ingredient..." />
+                    <button class="inline-save-btn" title="Save">✓</button>
+                    <button class="inline-cancel-btn" title="Cancel">✗</button>
+                `;
+                
+                textSpan.replaceWith(editForm);
+                const input = editForm.querySelector('.inline-edit-input');
+                input.focus();
+                
+                // Save function
+                const save = () => {
+                    const newValue = input.value.trim();
+                    if (newValue) {
+                        currentRecipe.ingredients[newIndex] = newValue;
+                        
+                        logEdit(
+                            ['Added ingredient'],
+                            [createChangeDetail(
+                                'ingredient',
+                                'Added ingredient',
+                                [`Added "${newValue}"`],
+                                [],
+                                [newValue]
+                            )]
+                        );
+                        
+                        saveRecipe(currentRecipe);
+                        displayIngredients(currentRecipe.ingredients);
+                    } else {
+                        // Remove empty ingredient
+                        currentRecipe.ingredients.splice(newIndex, 1);
+                        displayIngredients(currentRecipe.ingredients);
+                    }
+                };
+                
+                // Cancel function
+                const cancel = () => {
+                    // Remove empty ingredient
+                    currentRecipe.ingredients.splice(newIndex, 1);
+                    displayIngredients(currentRecipe.ingredients);
+                };
+                
+                editForm.querySelector('.inline-save-btn').addEventListener('click', save);
+                editForm.querySelector('.inline-cancel-btn').addEventListener('click', cancel);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') save();
+                    if (e.key === 'Escape') cancel();
+                });
+            }, 50);
+        }
+        
+        // Direction Reordering
+        function displayDirections(directions) {
+            const list = document.getElementById('directions-list');
+            if (!list) return;
+            
+            list.innerHTML = directions.map((dir, index) => `
+                <li class="direction-item" data-index="${index}" draggable="true">
+                    <span class="drag-handle">☰</span>
+                    <span class="direction-number">${index + 1}.</span>
+                    <span class="direction-text" onclick="editDirection(${index})" style="cursor: pointer; flex: 1;">${escapeHtml(dir)}</span>
+                    <div class="direction-controls">
+                        <button class="control-btn delete-btn" onclick="deleteDirection(${index})">🗑️</button>
+                    </div>
+                </li>
+            `).join('');
+            
+            setupDragAndDrop('directions');
+        }
+        
+        function moveDirectionUp(index) {
+            if (index === 0) return;
+            const directions = [...currentRecipe.directions];
+            const oldValue = directions[index];
+            
+            // Swap
+            [directions[index - 1], directions[index]] = [directions[index], directions[index - 1]];
+            currentRecipe.directions = directions;
+            
+            // Log the change with proper format
+            logEdit(
+                ['Reordered direction'],
+                [createChangeDetail(
+                    'direction',
+                    'Reordered direction',
+                    [`Moved step ${index + 1} to step ${index}`],
+                    directions,
+                    directions
+                )]
+            );
+            
+            saveRecipe(currentRecipe);
+            displayDirections(directions);
+            showToast('Moved up', 'success');
+        }
+        
+        function moveDirectionDown(index) {
+            const directions = [...currentRecipe.directions];
+            if (index === directions.length - 1) return;
+            const oldValue = directions[index];
+            
+            // Swap
+            [directions[index], directions[index + 1]] = [directions[index + 1], directions[index]];
+            currentRecipe.directions = directions;
+            
+            // Log the change with proper format
+            logEdit(
+                ['Reordered direction'],
+                [createChangeDetail(
+                    'direction',
+                    'Reordered direction',
+                    [`Moved step ${index + 1} to step ${index + 2}`],
+                    directions,
+                    directions
+                )]
+            );
+            
+            saveRecipe(currentRecipe);
+            displayDirections(directions);
+            showToast('Moved down', 'success');
+        }
+        
+        function editDirection(index) {
+            const list = document.getElementById('directions-list');
+            const item = list.children[index];
+            if (!item) return;
+            
+            const textSpan = item.querySelector('.direction-text');
+            const oldValue = currentRecipe.directions[index];
+            
+            // Create inline edit form with textarea for multi-line
+            const editForm = document.createElement('div');
+            editForm.className = 'inline-edit-form';
+            editForm.innerHTML = `
+                <textarea class="inline-edit-textarea">${escapeHtml(oldValue)}</textarea>
+                <button class="inline-save-btn" title="Save">✓</button>
+                <button class="inline-cancel-btn" title="Cancel">✗</button>
+            `;
+            
+            // Replace text with edit form
+            textSpan.replaceWith(editForm);
+            const textarea = editForm.querySelector('.inline-edit-textarea');
+            textarea.focus();
+            textarea.select();
+            
+            // Save function
+            const save = () => {
+                const newValue = textarea.value.trim();
+                if (newValue && newValue !== oldValue) {
+                    currentRecipe.directions[index] = newValue;
+                    
+                    logEdit(
+                        ['Edited direction'],
+                        [createChangeDetail(
+                            'direction',
+                            'Edited direction',
+                            [`Changed step ${index + 1} from "${oldValue}" to "${newValue}"`],
+                            [oldValue],
+                            [newValue]
+                        )]
+                    );
+                    
+                    saveRecipe(currentRecipe);
+                    displayDirections(currentRecipe.directions);
+                } else {
+                    displayDirections(currentRecipe.directions);
+                }
+            };
+            
+            // Cancel function
+            const cancel = () => {
+                displayDirections(currentRecipe.directions);
+            };
+            
+            // Event listeners
+            editForm.querySelector('.inline-save-btn').addEventListener('click', save);
+            editForm.querySelector('.inline-cancel-btn').addEventListener('click', cancel);
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) save();  // Ctrl+Enter to save
+                if (e.key === 'Escape') cancel();
+            });
+        }
+        
+        function deleteDirection(index) {
+            const oldValue = currentRecipe.directions[index];
+            const preview = oldValue.length > 50 ? oldValue.substring(0, 50) + '...' : oldValue;
+            showDeleteConfirmation(
+                `Delete step ${index + 1}: "${preview}"?`,
+                () => {
+                    currentRecipe.directions.splice(index, 1);
+                    
+                    // Log the change with proper format
+                    logEdit(
+                        ['Deleted direction'],
+                        [createChangeDetail(
+                            'direction',
+                            'Deleted direction',
+                            [`Removed step ${index + 1}: "${oldValue}"`],
+                            [oldValue],
+                            []
+                        )]
+                    );
+                    
+                    saveRecipe(currentRecipe);
+                    displayDirections(currentRecipe.directions);
+                    showToast('Direction deleted', 'success');
+                }
+            );
+        }
+        
+        function addDirection() {
+            const list = document.getElementById('directions-list');
+            
+            // Add empty direction at the end
+            currentRecipe.directions.push('');
+            const newIndex = currentRecipe.directions.length - 1;
+            
+            // Redisplay to show new empty item
+            displayDirections(currentRecipe.directions);
+            
+            // Immediately start editing the new item
+            setTimeout(() => {
+                const newItem = list.children[newIndex];
+                if (!newItem) return;
+                
+                const textSpan = newItem.querySelector('.direction-text');
+                
+                // Create inline edit form with textarea
+                const editForm = document.createElement('div');
+                editForm.className = 'inline-edit-form';
+                editForm.innerHTML = `
+                    <textarea class="inline-edit-textarea" placeholder="Enter direction..."></textarea>
+                    <button class="inline-save-btn" title="Save">✓</button>
+                    <button class="inline-cancel-btn" title="Cancel">✗</button>
+                `;
+                
+                textSpan.replaceWith(editForm);
+                const textarea = editForm.querySelector('.inline-edit-textarea');
+                textarea.focus();
+                
+                // Save function
+                const save = () => {
+                    const newValue = textarea.value.trim();
+                    if (newValue) {
+                        currentRecipe.directions[newIndex] = newValue;
+                        
+                        logEdit(
+                            ['Added direction'],
+                            [createChangeDetail(
+                                'direction',
+                                'Added direction',
+                                [`Added step ${newIndex + 1}: "${newValue}"`],
+                                [],
+                                [newValue]
+                            )]
+                        );
+                        
+                        saveRecipe(currentRecipe);
+                        displayDirections(currentRecipe.directions);
+                    } else {
+                        // Remove empty direction
+                        currentRecipe.directions.splice(newIndex, 1);
+                        displayDirections(currentRecipe.directions);
+                    }
+                };
+                
+                // Cancel function
+                const cancel = () => {
+                    // Remove empty direction
+                    currentRecipe.directions.splice(newIndex, 1);
+                    displayDirections(currentRecipe.directions);
+                };
+                
+                editForm.querySelector('.inline-save-btn').addEventListener('click', save);
+                editForm.querySelector('.inline-cancel-btn').addEventListener('click', cancel);
+                textarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) save();  // Ctrl+Enter to save
+                    if (e.key === 'Escape') cancel();
+                });
+            }, 50);
+        }
+        
+        // Drag and Drop
+        function setupDragAndDrop(type) {
+            const listId = type === 'ingredients' ? 'ingredients-list' : 'directions-list';
+            const list = document.getElementById(listId);
+            if (!list) return;
+            
+            const items = list.querySelectorAll('li');
+            let draggedItem = null;
+            
+            items.forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    draggedItem = this;
+                    this.classList.add('dragging');
+                });
+                
+                item.addEventListener('dragend', function(e) {
+                    this.classList.remove('dragging');
+                });
+                
+                item.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    if (this === draggedItem) return;
+                    const afterElement = getDragAfterElement(list, e.clientY);
+                    if (afterElement == null) {
+                        list.appendChild(draggedItem);
+                    } else {
+                        list.insertBefore(draggedItem, afterElement);
+                    }
+                });
+                
+                item.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    const items = Array.from(list.children);
+                    const oldOrder = type === 'ingredients' ? [...currentRecipe.ingredients] : [...currentRecipe.directions];
+                    const newOrder = items.map(item => {
+                        const index = parseInt(item.dataset.index);
+                        return type === 'ingredients' ? currentRecipe.ingredients[index] : currentRecipe.directions[index];
+                    });
+                    
+                    // Log the change with proper format
+                    const changeType = type === 'ingredients' ? 'ingredient' : 'direction';
+                    logEdit(
+                        [`Reordered ${changeType}s via drag-and-drop`],
+                        [createChangeDetail(
+                            changeType,
+                            `Reordered ${changeType}s via drag-and-drop`,
+                            [`Rearranged ${changeType} order using drag-and-drop`],
+                            oldOrder,
+                            newOrder
+                        )]
+                    );
+                    
+                    if (type === 'ingredients') {
+                        currentRecipe.ingredients = newOrder;
+                        displayIngredients(newOrder);
+                    } else {
+                        currentRecipe.directions = newOrder;
+                        displayDirections(newOrder);
+                    }
+                    saveRecipe(currentRecipe);
+                    showToast('Reordered!', 'success');
+                });
+            });
+        }
+        
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        
+        // Toast Messages
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast-message toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Initialize new features
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof currentRecipe !== 'undefined') {
+                initCarousel();
+                setupCarouselButtons();
+                updateImagesPerView();
+                initTitleEditing();
+                displayIngredients(currentRecipe.ingredients);
+                displayDirections(currentRecipe.directions);
+            }
+        });
+        
+        // ====================================================================
+        // END NEW FEATURES
+        // ====================================================================
+        
+        // Check authentication before loading recipe
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('momsrecipes_current_user');
+            if (!currentUser) {
+                // Not logged in - redirect to main page
+                window.location.href = '../index.html';
+                return;
+            }
+            // Logged in - load recipe
+            loadSavedRecipe();
+            
+            // Initialize meta tag editing
+            initMetaTagEditing();
+        });
+    </script>
+</body>
+</html>

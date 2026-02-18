@@ -1,0 +1,22 @@
+# .htaccess for API data directory
+# Location: /paul.stamey/public_html/momsrecipes/api/data/
+
+# DENY ALL ACCESS to this directory
+# Protects database files from direct web access
+
+Order deny,allow
+Deny from all
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect all files
+<FilesMatch ".*">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Alternative syntax for Apache 2.4+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>

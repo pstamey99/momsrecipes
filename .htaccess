@@ -1,0 +1,47 @@
+# .htaccess for Mom's Recipes main directory
+# Location: /paul.stamey/public_html/momsrecipes/
+
+# Enable PHP processing
+<FilesMatch "\.php$">
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+# Enable rewrite engine
+RewriteEngine On
+RewriteBase /momsrecipes/
+
+# Default documents
+DirectoryIndex index.html index.php
+
+# Allow directory listing for now (disable in production)
+Options +Indexes +FollowSymLinks
+AllowOverride All
+
+# Permissions - Allow from all
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+# Enable CORS
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Compress text files for faster delivery
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache static files
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType text/javascript "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>

@@ -1,0 +1,8 @@
+{
+    "ftp_host": "ftp.paulstamey.com",
+    "ftp_user": "paul.stamey@paulstamey.com",
+    "ftp_pass": "YOUR_FTP_PASSWORD_HERE",
+    "ftp_remote_dir": "/public_html/momsrecipes",
+    "api_url": "https://paulstamey.com/momsrecipes/api/index.php",
+    "api_key": "YOUR_API_KEY_HERE"
+}

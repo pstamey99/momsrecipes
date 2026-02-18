@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mom's Recipes - Family Recipe Collection</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Authentication Styles */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .auth-overlay.hidden {
+            display: none;
+        }
+        
+        .auth-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .auth-header h1 {
+            color: #8B4513;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .auth-header p {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+            border: none;
+            background: none;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .auth-tab.active {
+            color: #8B4513;
+            border-bottom: 3px solid #8B4513;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8B4513;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #8B4513;
+        }
+        
+        .auth-button {
+            width: 100%;
+            padding: 15px;
+            background: #8B4513;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .auth-button:hover {
+            background: #A0522D;
+        }
+        
+        .auth-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .auth-message.error {
+            background: #ffe6e6;
+            color: #c00;
+        }
+        
+        .auth-message.success {
+            background: #e6ffe6;
+            color: #070;
+        }
+        
+        .auth-help {
+            margin-top: 15px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .user-info.visible {
+            display: block;
+        }
+        
+        .user-info .username {
+            color: #8B4513;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .logout-btn {
+            background: #E74C3C;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .logout-btn:hover {
+            background: #C0392B;
+        }
+        
+        .main-content {
+            display: none;
+        }
+        
+        .main-content.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Authentication Overlay -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>🍳 Mom's Recipes</h1>
+                <p>Family Members Only</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchTab('register')">Register</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="auth-button">🔓 Login</button>
+                
+                <div id="login-message" class="auth-message" style="display:none;"></div>
+                
+                <div class="auth-help">
+                    <a href="#" onclick="showPasswordReset(); return false;" style="color: #ff69b4; text-decoration: none;">Forgot password?</a>
+                </div>
+            </form>
+            
+            <!-- Password Reset Form -->
+            <form id="reset-form" class="auth-form" onsubmit="handlePasswordReset(event)">
+                <div class="form-group">
+                    <label for="reset-username">Username</label>
+                    <input type="text" id="reset-username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reset-fullname">Full Name (for verification)</label>
+                    <input type="text" id="reset-fullname" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reset-new-password">New Password</label>
+                    <input type="password" id="reset-new-password" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reset-confirm-password">Confirm New Password</label>
+                    <input type="password" id="reset-confirm-password" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <button type="submit" class="auth-button">🔑 Reset Password</button>
+                
+                <div id="reset-message" class="auth-message" style="display:none;"></div>
+                
+                <div class="auth-help">
+                    <a href="#" onclick="showLoginForm(); return false;" style="color: #ff69b4; text-decoration: none;">← Back to login</a>
+                </div>
+            </form>
+            
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" required minlength="3" autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-confirm">Confirm Password</label>
+                    <input type="password" id="register-confirm" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-fullname">Full Name</label>
+                    <input type="text" id="register-fullname" required placeholder="e.g., John Smith">
+                </div>
+                
+                <button type="submit" class="auth-button">📝 Register</button>
+                
+                <div id="register-message" class="auth-message" style="display:none;"></div>
+                
+                <div class="auth-help">
+                    Registration is for family members only
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- User Info (shown when logged in) -->
+    <div id="user-info" class="user-info">
+        <span class="username" id="current-username"></span>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+    
+    <!-- Main Content (hidden until logged in) -->
+    <div id="main-content" class="main-content">
+        <div class="header">
+            <div class="header-content">
+                <h1>Mom's Recipes</h1>
+                <p class="subtitle">A collection of treasured family recipes</p>
+                <a href="../" class="back-link">← Back to home</a>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="search" placeholder="Search recipes...">
+            </div>
+            
+            <div class="filters">
+                <select id="meal-type">
+                    <option value="">All Meal Types</option>
+                </select>
+                
+                <select id="cuisine">
+                    <option value="">All Cuisines</option>
+                </select>
+                
+                <select id="ingredient">
+                    <option value="">All Ingredients</option>
+                </select>
+                
+                <select id="method">
+                    <option value="">All Methods</option>
+                </select>
+                
+                <button id="clear-filters">Clear All</button>
+            </div>
+            
+            <div class="stats">
+                <span id="recipe-count">0 recipes</span>
+            </div>
+        </div>
+        
+        <!-- Main content with blog sidebar -->
+        <div class="content-with-sidebar">
+            <!-- Blog Section (Left Sidebar) -->
+            <div class="blog-section">
+                <h2>Recipe Memories</h2>
+                <p class="blog-subtitle">Share your stories and memories about these recipes</p>
+                
+                <!-- New Post Form -->
+                <div class="new-post-form">
+                    <h3>Share a Memory</h3>
+                    <textarea id="blog-content" placeholder="Share your memory about a recipe..." rows="4" maxlength="500"></textarea>
+                    <button id="post-memory" class="btn-primary">Post Memory</button>
+                </div>
+                
+                <!-- Blog Posts List -->
+                <div id="blog-posts" class="blog-posts">
+                    <!-- Posts will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Recipe Grid (Center/Main Area) -->
+            <div class="recipe-grid" id="recipe-grid">
+                <!-- Recipe cards will be inserted here by JavaScript -->
+            </div>
+            
+            <!-- Title Changes Log (Right Sidebar) -->
+            <div class="title-changes-section">
+                <h2>Recent Title Changes</h2>
+                <p class="title-changes-subtitle">Track recipe name updates</p>
+                
+                <!-- Title Changes List -->
+                <div id="title-changes-log" class="title-changes-list">
+                    <!-- Title changes will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script src="auth.js"></script>
+    <script>
+    // Blog functionality
+    document.addEventListener('DOMContentLoaded', async function() {
+        const blogPosts = await loadBlogPosts();
+        displayBlogPosts(blogPosts);
+        
+        document.getElementById('post-memory').addEventListener('click', async function() {
+            const content = document.getElementById('blog-content').value.trim();
+            
+            if (!content) {
+                alert('Please write a memory to share');
+                return;
+            }
+            
+            const currentUser = localStorage.getItem('momsrecipes_current_user');
+            if (!currentUser) {
+                alert('You must be logged in to post');
+                return;
+            }
+            
+            // Parse user data and get display name
+            const userData = JSON.parse(currentUser);
+            const displayName = userData.fullname || userData.username;
+            
+            const post = {
+                id: Date.now(),
+                content: content,
+                author: displayName,
+                date: new Date().toISOString(),
+                likes: 0,
+                replies: []
+            };
+            
+            const posts = await loadBlogPosts();
+            posts.unshift(post);
+            await saveBlogPosts(posts);
+            displayBlogPosts(posts);
+            
+            // Clear form
+            document.getElementById('blog-content').value = '';
+        });
+    });
+    
+    function loadBlogPosts() {
+        try {
+            const stored = localStorage.getItem('momsrecipes_blog_posts');
+            if (!stored) return [];
+            
+            const parsed = JSON.parse(stored);
+            
+            // Ensure it's an array
+            if (Array.isArray(parsed)) {
+                return parsed;
+            } else {
+                console.warn('Blog posts data was not an array, resetting');
+                localStorage.removeItem('momsrecipes_blog_posts');
+                return [];
+            }
+        } catch (e) {
+            console.error('Error loading blog posts:', e);
+            localStorage.removeItem('momsrecipes_blog_posts');
+            return [];
+        }
+    }
+    
+    function saveBlogPosts(posts) {
+        localStorage.setItem('momsrecipes_blog_posts', JSON.stringify(posts));
+    }
+    
+    function displayBlogPosts(posts) {
+        const container = document.getElementById('blog-posts');
+        
+        if (posts.length === 0) {
+            container.innerHTML = '<p class="no-posts">No memories shared yet. Be the first!</p>';
+            return;
+        }
+        
+        container.innerHTML = posts.map(post => {
+            // Handle legacy posts where author might be JSON
+            let authorName = post.author;
+            try {
+                // Try to parse as JSON (old posts)
+                const authorData = JSON.parse(post.author);
+                authorName = authorData.fullname || authorData.username;
+            } catch(e) {
+                // Not JSON, use as-is (new posts)
+                authorName = post.author;
+            }
+            
+            const replyCount = (post.replies && post.replies.length > 0) ? post.replies.length : 0;
+            const replyText = replyCount > 0 ? `(${replyCount})` : '';
+            const deleteButton = isPostAuthor(post.author) ? `<button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>` : '';
+            
+            return `
+            <div class="blog-post" data-id="${post.id}">
+                <div class="post-meta">
+                    <span class="post-author">${escapeHtml(authorName)}</span>
+                    <span class="post-date">${formatDate(post.date)}</span>
+                </div>
+                <p class="post-content">${escapeHtml(post.content)}</p>
+                <div class="post-actions">
+                    <button class="like-btn" onclick="likePost(${post.id})">
+                        ❤️ ${post.likes || 0}
+                    </button>
+                    <button class="reply-btn" onclick="toggleReplyForm(${post.id})">
+                        💬 Reply ${replyText}
+                    </button>
+                    ${deleteButton}
+                </div>
+                
+                <!-- Reply Form (hidden by default) -->
+                <div class="reply-form" id="reply-form-${post.id}" style="display: none;">
+                    <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Write a reply..." rows="2" maxlength="300"></textarea>
+                    <div class="reply-form-actions">
+                        <button class="btn-reply" onclick="submitReply(${post.id})">Post Reply</button>
+                        <button class="btn-cancel" onclick="toggleReplyForm(${post.id})">Cancel</button>
+                    </div>
+                </div>
+                
+                <!-- Replies List -->
+                <div class="replies-section" id="replies-${post.id}">
+                    ${displayReplies(post.replies || [], post.id)}
+                </div>
+            </div>
+        `;
+        }).join('');
+    }
+    
+    function isPostAuthor(author) {
+        const currentUser = localStorage.getItem('momsrecipes_current_user');
+        if (!currentUser) return false;
+        
+        // Parse current user to get display name
+        const userData = JSON.parse(currentUser);
+        const displayName = userData.fullname || userData.username;
+        
+        // Check if author matches current user's display name
+        // Also handle old posts that might have JSON stored as author
+        if (author === displayName) return true;
+        if (author === currentUser) return true; // Legacy support
+        
+        return false;
+    }
+    
+    async function likePost(postId) {
+        const posts = await loadBlogPosts();
+        const post = posts.find(p => p.id === postId);
+        if (post) {
+            post.likes = (post.likes || 0) + 1;
+            await saveBlogPosts(posts);
+            displayBlogPosts(posts);
+        }
+    }
+    
+    async function deletePost(postId) {
+        if (!confirm('Delete this memory?')) return;
+        
+        const posts = await loadBlogPosts();
+        const filtered = posts.filter(p => p.id !== postId);
+        await saveBlogPosts(filtered);
+        displayBlogPosts(filtered);
+    }
+    
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = now - date;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        if (days === 0) return 'Today';
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return `${days} days ago`;
+        return date.toLocaleDateString();
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Reply functions
+    function toggleReplyForm(postId) {
+        const form = document.getElementById(`reply-form-${postId}`);
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            document.getElementById(`reply-input-${postId}`).focus();
+        } else {
+            form.style.display = 'none';
+            document.getElementById(`reply-input-${postId}`).value = '';
+        }
+    }
+    
+    async function submitReply(postId) {
+        const currentUser = localStorage.getItem('momsrecipes_current_user');
+        if (!currentUser) {
+            alert('You must be logged in to reply');
+            return;
+        }
+        
+        // Parse user data and get display name
+        const userData = JSON.parse(currentUser);
+        const displayName = userData.fullname || userData.username;
+        
+        const replyInput = document.getElementById(`reply-input-${postId}`);
+        const content = replyInput.value.trim();
+        
+        if (!content) {
+            alert('Please write a reply');
+            return;
+        }
+        
+        const posts = await loadBlogPosts();
+        const post = posts.find(p => p.id === postId);
+        
+        if (post) {
+            if (!post.replies) {
+                post.replies = [];
+            }
+            
+            const reply = {
+                id: Date.now(),
+                content: content,
+                author: displayName,
+                date: new Date().toISOString()
+            };
+            
+            post.replies.push(reply);
+            await saveBlogPosts(posts);
+            displayBlogPosts(posts);
+        }
+    }
+    
+    async function deleteReply(postId, replyId) {
+        if (!confirm('Delete this reply?')) return;
+        
+        const posts = await loadBlogPosts();
+        const post = posts.find(p => p.id === postId);
+        
+        if (post && post.replies) {
+            post.replies = post.replies.filter(r => r.id !== replyId);
+            await saveBlogPosts(posts);
+            displayBlogPosts(posts);
+        }
+    }
+    
+    function displayReplies(replies, postId) {
+        if (!replies || replies.length === 0) {
+            return '';
+        }
+        
+        return replies.map(reply => {
+            // Handle legacy replies where author might be JSON
+            let authorName = reply.author;
+            try {
+                const authorData = JSON.parse(reply.author);
+                authorName = authorData.fullname || authorData.username;
+            } catch(e) {
+                authorName = reply.author;
+            }
+            
+            const deleteButton = isPostAuthor(reply.author) ? `<button class="delete-reply-btn" onclick="deleteReply(${postId}, ${reply.id})">Delete</button>` : '';
+            
+            return `
+            <div class="reply-item">
+                <div class="reply-meta">
+                    <span class="reply-author">${escapeHtml(authorName)}</span>
+                    <span class="reply-date">${formatDate(reply.date)}</span>
+                </div>
+                <p class="reply-content">${escapeHtml(reply.content)}</p>
+                ${deleteButton}
+            </div>
+        `;
+        }).join('');
+    }
+    
+    // Title Changes functionality
+    function loadTitleChanges() {
+        const stored = localStorage.getItem('momsrecipes_master_title_log');
+        return stored ? JSON.parse(stored) : [];
+    }
+    
+    function displayTitleChanges() {
+        const changes = loadTitleChanges();
+        const container = document.getElementById('title-changes-log');
+        
+        if (!container) return;
+        
+        if (changes.length === 0) {
+            container.innerHTML = '<div class="no-title-changes">No title changes yet</div>';
+            return;
+        }
+        
+        container.innerHTML = changes.slice(0, 20).map(change => {
+            const recipeLink = change.recipeUrl ? `<a href="${change.recipeUrl}" class="view-recipe-link">View Recipe →</a>` : '';
+            
+            return `
+            <div class="title-change-item">
+                <div class="change-time">${change.formatted_time || formatDate(change.date)}</div>
+                <div class="change-user">👤 ${escapeHtml(change.user)}</div>
+                <div class="change-details">
+                    <span class="old-title">❌ ${escapeHtml(change.from)}</span>
+                    <span class="new-title">✓ ${escapeHtml(change.to)}</span>
+                </div>
+                ${recipeLink}
+            </div>
+        `;
+        }).join('');
+    }
+    
+    // Load title changes on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        displayTitleChanges();
+        
+        // Refresh title changes every 30 seconds to catch updates
+        setInterval(displayTitleChanges, 30000);
+    });
+    </script>
+</body>
+</html>

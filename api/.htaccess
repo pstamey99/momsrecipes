@@ -1,0 +1,54 @@
+# .htaccess for Mom's Recipes API
+# Location: /paul.stamey/public_html/momsrecipes/api/
+
+# Enable PHP processing
+<FilesMatch "\.php$">
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+# Enable rewrite engine for clean URLs
+RewriteEngine On
+RewriteBase /momsrecipes/api/
+
+# Default documents
+DirectoryIndex index.php index.html
+
+# Allow access to all files
+Options -Indexes +FollowSymLinks
+AllowOverride All
+
+# Permissions - Allow from all
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+# Enable CORS for API
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Handle OPTIONS requests for CORS
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
+
+# Route API requests through index.php if file doesn't exist
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+
+# Protect sensitive files
+<FilesMatch "(\.db|\.json|\.log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# PHP settings for better error handling (remove in production)
+php_flag display_errors On
+php_value error_reporting E_ALL
+php_value max_execution_time 300
+php_value upload_max_filesize 10M
+php_value post_max_size 10M
