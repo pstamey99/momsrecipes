@@ -151,6 +151,17 @@ body {
     box-shadow: 0 0 0 3px rgba(255, 160, 122, 0.2);
 }
 
+
+#from-source {
+    border-color: #C39BD3;
+    background: linear-gradient(to right, white 92%, #C39BD3 92%);
+}
+
+#from-source:focus {
+    border-color: #C39BD3;
+    box-shadow: 0 0 0 3px rgba(195, 155, 211, 0.2);
+}
+
 .filters select:hover,
 .filters select:focus {
     border-color: #ff69b4;
@@ -727,29 +738,22 @@ body {
 }
 
 .recipe-card {
-    /* Notebook paper texture background */
-    background: linear-gradient(to right, 
-        #f5f1e8 0%, 
-        #f5f1e8 15%, 
-        #e8f2f7 15%, 
-        #e8f2f7 100%
-    );
-    /* Graph paper grid pattern */
-    background-image: 
-        linear-gradient(to right, #d84315 15%, transparent 15%),
-        repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0, 0, 0, 0.08) 19px, rgba(0, 0, 0, 0.08) 20px),
-        repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0, 0, 0, 0.08) 19px, rgba(0, 0, 0, 0.08) 20px);
-    background-size: 100% 100%, 20px 20px, 20px 20px;
-    background-position: 0 0, 0 0, 0 0;
+    background: transparent;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 9px, rgba(255, 255, 255, 0.4) 9px, rgba(255, 255, 255, 0.4) 10px),
+        repeating-linear-gradient(90deg, transparent, transparent 9px, rgba(255, 255, 255, 0.4) 9px, rgba(255, 255, 255, 0.4) 10px);
+    background-size: 10px 10px;
     border-radius: 12px;
     padding: 25px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
     transition: all 0.3s ease;
     cursor: pointer;
     text-decoration: none;
     color: #333;
     display: block;
-    border: 2px solid #d4c5b0;
+    border: 2px solid rgba(255, 255, 255, 0.75);
     max-width: 400px;
     width: 100%;
     justify-self: start;
@@ -759,84 +763,23 @@ body {
 
 /* Add subtle paper texture overlay */
 .recipe-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px),
-        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px);
-    pointer-events: none;
-    border-radius: 12px;
+    content: none;
 }
 
 /* Color-coded card backgrounds by meal type - softer tints over paper */
-.recipe-card[data-meal-breakfast]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 182, 193, 0.15);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
-.recipe-card[data-meal-lunch]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(78, 205, 196, 0.12);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
-.recipe-card[data-meal-dinner]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 160, 122, 0.15);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
-.recipe-card[data-meal-dessert]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(147, 112, 219, 0.12);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
+.recipe-card[data-meal-breakfast]::after,
+.recipe-card[data-meal-lunch]::after,
+.recipe-card[data-meal-dinner]::after,
+.recipe-card[data-meal-dessert]::after,
 .recipe-card[data-meal-snack]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 235, 59, 0.15);
-    pointer-events: none;
-    border-radius: 12px;
+    content: none;
 }
 
 .recipe-card:hover {
+    background: rgba(255, 255, 255, 0.15);
     transform: translateY(-5px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-    border-color: #c4b5a0;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+    border-color: rgba(255, 255, 255, 0.95);
 }
 
 .recipe-card-title {
@@ -852,6 +795,20 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     z-index: 1;
+}
+
+.recipe-card-from {
+    font-size: 0.85em;
+    color: #666;
+    font-style: italic;
+    margin: 2px 0 8px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: rgba(255, 255, 255, 0.75);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
 }
 
 .recipe-card-meta {
@@ -946,17 +903,23 @@ body {
 }
 
 .meta-select {
-    padding: 8px 12px;
+    padding: 4px 10px;
     border-radius: 20px;
     border: 2px solid #ffd700;
     background: white;
     font-size: 0.85em;
     cursor: pointer;
     outline: none;
+    min-width: 120px;
+    max-width: 220px;
+    display: inline-block;
+    vertical-align: middle;
+    appearance: auto;
 }
 
 .meta-select:focus {
     border-color: #ff69b4;
+    box-shadow: 0 0 0 2px rgba(255, 105, 180, 0.2);
 }
 
 /* Recipe Page */
@@ -965,6 +928,56 @@ body {
     margin: 0 auto;
     padding: 30px 20px 60px;
 }
+
+/* Social bar — favorites + reactions on recipe pages */
+.social-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0 20px;
+    padding: 12px 16px;
+    background: #fdf0f5;
+    border-radius: 10px;
+    border: 1px solid #f5c6d8;
+}
+.fav-btn-page {
+    background: none;
+    border: 1.5px solid #e05a7a;
+    color: #e05a7a;
+    border-radius: 20px;
+    padding: 5px 14px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.fav-btn-page:hover { background: #e05a7a; color: white; }
+.fav-btn-page.favorited { background: #e05a7a; color: white; }
+.reactions-panel { display: flex; align-items: center; gap: 6px; }
+.reactions-label { font-size: 0.85em; color: #888; }
+.react-btn {
+    background: none;
+    border: 1.5px solid #ddd;
+    border-radius: 20px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: all 0.15s;
+    line-height: 1.4;
+}
+.react-btn:hover { border-color: #e05a7a; transform: scale(1.15); }
+.react-btn.reacted { background: #fce8ef; border-color: #e05a7a; }
+.reaction-counts { display: flex; gap: 8px; flex-wrap: wrap; }
+.rc-chip {
+    background: #f0f0f0;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.85em;
+    color: #555;
+}
+
+
 
 .recipe-header {
     background: white;

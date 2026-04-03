@@ -50,10 +50,272 @@ $path = trim($path, '/');
 // Get request body for POST/PUT requests
 $input = null;
 if (in_array($method, ['POST', 'PUT', 'PATCH'])) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        sendResponse(400, ['error' => 'Invalid JSON in request body']);
+    $raw = file_get_contents('php://input');
+    if (!empty($raw)) {
+        $input = json_decode($raw, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            sendResponse(400, ['error' => 'Invalid JSON in request body']);
+        }
     }
+}
+
+// Handle legacy ?action= style requests from frontend
+$action = $_GET['action'] ?? null;
+if ($action) {
+    switch ($action) {
+        case 'get_blog':
+            $posts = $db->getBlogPosts();
+            sendResponse(200, $posts ?? []);
+            break;
+
+        case 'get_title_changes':
+            try {
+                $titleChanges = $db->getTitleChanges();
+                sendResponse(200, $titleChanges ?? []);
+            } catch (Exception $e) {
+                sendResponse(200, []);
+            }
+            break;
+
+        case 'save_blog':
+            $required = ['title', 'content'];
+            foreach ($required as $field) {
+                if (empty($input[$field])) {
+                    sendResponse(400, ['error' => "Missing required field: $field"]);
+                }
+            }
+            $postId = $db->createBlogPost($input);
+            $post = $db->getBlogPost($postId);
+            sendResponse(201, ['post' => $post, 'message' => 'Blog post created successfully']);
+            break;
+
+        case 'delete_blog':
+            $postId = (int)($input['id'] ?? $_GET['id'] ?? 0);
+            if (!$postId) sendResponse(400, ['error' => 'Missing post id']);
+            $success = $db->deleteBlogPost($postId);
+            sendResponse($success ? 200 : 500, ['message' => $success ? 'Deleted' : 'Failed to delete']);
+            break;
+
+        case 'create_blog':
+            if (empty($input['content'])) sendResponse(400, ['error' => 'Missing required field: content']);
+            $input['title'] = $input['title'] ?? '';
+            $postId = $db->createBlogPost($input);
+            $post = $db->getBlogPost($postId);
+            sendResponse(201, $post);
+            break;
+
+        case 'like_blog':
+            $postId = (int)($_GET['id'] ?? 0);
+            if (!$postId) sendResponse(400, ['error' => 'Missing post id']);
+            $post = $db->getBlogPost($postId);
+            if (!$post) sendResponse(404, ['error' => 'Post not found']);
+            $likes = json_decode($post['likes'] ?? '[]', true) ?: [];
+            $user = $input['user'] ?? $_GET['user'] ?? 'anonymous';
+            if (!in_array($user, $likes)) $likes[] = $user;
+            $db->updateBlogPostField($postId, 'likes', json_encode($likes));
+            sendResponse(200, ['likes' => $likes]);
+            break;
+
+        case 'reply_blog':
+            $postId = (int)($_GET['id'] ?? $input['id'] ?? 0);
+            if (!$postId) sendResponse(400, ['error' => 'Missing post id']);
+            $post = $db->getBlogPost($postId);
+            if (!$post) sendResponse(404, ['error' => 'Post not found']);
+            $replies = json_decode($post['replies'] ?? '[]', true) ?: [];
+            $replies[] = [
+                'id'      => uniqid(),
+                'author'  => $input['author'] ?? $input['user'] ?? 'Anonymous',
+                'content' => $input['content'] ?? '',
+                'date'    => gmdate('c')
+            ];
+            $db->updateBlogPostField($postId, 'replies', json_encode($replies));
+            sendResponse(200, ['replies' => $replies]);
+            break;
+
+        case 'delete_reply':
+            $postId  = (int)($_GET['id'] ?? $input['id'] ?? 0);
+            $replyId = $input['reply_id'] ?? $_GET['reply_id'] ?? null;
+            if (!$postId) sendResponse(400, ['error' => 'Missing post id']);
+            $post = $db->getBlogPost($postId);
+            if (!$post) sendResponse(404, ['error' => 'Post not found']);
+            $replies = json_decode($post['replies'] ?? '[]', true) ?: [];
+            $replies = array_values(array_filter($replies, fn($r) => $r['id'] !== $replyId));
+            $db->updateBlogPostField($postId, 'replies', json_encode($replies));
+            sendResponse(200, ['replies' => $replies]);
+            break;
+
+        case 'get_recipe':
+            $id = (int)($_GET['id'] ?? 0);
+            if (!$id) sendResponse(400, ['error' => 'Missing recipe id']);
+            $recipe = $db->getRecipe($id);
+            if (!$recipe) sendResponse(404, ['error' => 'Recipe not found']);
+            sendResponse(200, $recipe);
+            break;
+
+        case 'save_recipe':
+            $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
+            if (!$id) sendResponse(400, ['error' => 'Missing recipe id']);
+            if (!$db->getRecipe($id)) sendResponse(404, ['error' => 'Recipe not found']);
+            $db->updateRecipe($id, $input);
+            $recipe = $db->getRecipe($id);
+            sendResponse(200, $recipe);
+            break;
+
+        case 'add_history':
+            $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
+            if (!$id) sendResponse(400, ['error' => 'Missing recipe id']);
+            $db->addEditHistoryEntry($id, [
+                'field_name'  => $input['changes'] ?? 'edit',
+                'old_value'   => json_encode($input['changeDetails'] ?? []),
+                'new_value'   => $input['formatted_time'] ?? $input['timestamp'] ?? '',
+                'changed_by'  => $input['user'] ?? 'Anonymous'
+            ]);
+            sendResponse(200, ['success' => true]);
+            break;
+
+        case 'get_history':
+            $id = (int)($_GET['id'] ?? 0);
+            if (!$id) sendResponse(400, ['error' => 'Missing recipe id']);
+            $history = $db->getEditHistory($id);
+            sendResponse(200, $history ?? []);
+            break;
+
+        case 'add_title_change':
+            $recipeId  = $input['recipe_uuid'] ?? $input['id'] ?? null;
+            $oldTitle  = $input['old_title'] ?? '';
+            $newTitle  = $input['new_title'] ?? '';
+            $changedBy = $input['changed_by'] ?? 'Anonymous';
+            if (!$oldTitle || !$newTitle) sendResponse(400, ['error' => 'Missing title data']);
+            $db->saveTitleChange($recipeId, $oldTitle, $newTitle, $changedBy);
+            sendResponse(200, ['success' => true]);
+            break;
+
+        // ── Auth ──────────────────────────────────────────────────────────
+        case 'register':
+            if (empty($input['username']) || empty($input['password'])) {
+                sendResponse(400, ['error' => 'Username and password required']);
+            }
+            $result = $db->registerUser($input['username'], $input['password'], $input['fullname'] ?? '');
+            sendResponse(isset($result['error']) ? 400 : 201, $result);
+            break;
+
+        case 'login':
+            if (empty($input['username']) || empty($input['password'])) {
+                sendResponse(400, ['error' => 'Username and password required']);
+            }
+            $result = $db->loginUser($input['username'], $input['password']);
+            sendResponse(isset($result['error']) ? 401 : 200, $result);
+            break;
+
+        case 'logout':
+            $token = $input['token'] ?? ($_SERVER['HTTP_X_SESSION_TOKEN'] ?? '');
+            $db->logoutUser($token);
+            sendResponse(200, ['success' => true]);
+            break;
+
+        case 'verify':
+            $token = $input['token'] ?? ($_SERVER['HTTP_X_SESSION_TOKEN'] ?? '');
+            $user = $db->verifySession($token);
+            if ($user) {
+                sendResponse(200, ['success' => true, 'username' => $user['username'], 'fullname' => $user['fullname']]);
+            } else {
+                sendResponse(401, ['error' => 'Invalid or expired session']);
+            }
+            break;
+
+        case 'reset_password':
+            if (empty($input['username']) || empty($input['fullname']) || empty($input['new_password'])) {
+                sendResponse(400, ['error' => 'Username, full name, and new password required']);
+            }
+            $result = $db->resetPassword($input['username'], $input['fullname'], $input['new_password']);
+            sendResponse(isset($result['error']) ? 400 : 200, $result);
+            break;
+
+        case 'get_approved_users':
+            sendResponse(200, $db->getApprovedUsers());
+            break;
+
+        case 'sync_approved_users':
+            // Read approved_users.json and bulk-insert into DB table
+            $jsonPath = __DIR__ . '/../approved_users.json';
+            if (!file_exists($jsonPath)) sendResponse(404, ['error' => 'approved_users.json not found']);
+            $json = json_decode(file_get_contents($jsonPath), true);
+            $users = $json['users'] ?? [];
+            $synced = [];
+            foreach ($users as $u) {
+                $u = strtolower(trim($u));
+                if ($u) { $db->addApprovedUser($u, 'json-sync'); $synced[] = $u; }
+            }
+            sendResponse(200, ['success' => true, 'synced' => count($synced), 'users' => $synced]);
+            break;
+
+        case 'add_approved_user':
+            if (empty($input['username'])) sendResponse(400, ['error' => 'Username required']);
+            $db->addApprovedUser($input['username'], $input['added_by'] ?? 'admin');
+            sendResponse(200, ['success' => true]);
+            break;
+
+        case 'remove_approved_user':
+            if (empty($input['username'])) sendResponse(400, ['error' => 'Username required']);
+            $db->removeApprovedUser($input['username']);
+            sendResponse(200, ['success' => true]);
+            break;
+
+        // ── Custom Meta Options ───────────────────────────────────────────
+        case 'get_custom_meta':
+            $fieldType = $_GET['field_type'] ?? null;
+            sendResponse(200, $db->getCustomMetaOptions($fieldType));
+            break;
+
+        case 'add_custom_meta':
+            if (empty($input['field_type']) || empty($input['value'])) {
+                sendResponse(400, ['error' => 'field_type and value required']);
+            }
+            $db->addCustomMetaOption($input['field_type'], $input['value'], $input['added_by'] ?? null);
+            sendResponse(200, ['success' => true]);
+            break;
+
+        // ── Search index (replaces static recipes.json) ───────────────────
+        case 'create_recipe':
+            if (empty($input['title'])) sendResponse(400, ['error' => 'Title required']);
+            if (empty($input['ingredients'])) $input['ingredients'] = '1. No ingredients listed';
+            if (empty($input['directions'])) $input['directions'] = '1. See ingredients';
+            $id = $db->createRecipe($input);
+            $recipe = $db->getRecipe($id);
+            sendResponse(201, ['recipe' => $recipe, 'message' => 'Recipe created successfully']);
+            break;
+
+        case 'update_recipe':
+            $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
+            if (!$id) sendResponse(400, ['error' => 'Missing recipe id']);
+            if (!$db->getRecipe($id)) sendResponse(404, ['error' => 'Recipe not found']);
+            $db->updateRecipe($id, $input);
+            sendResponse(200, $db->getRecipe($id));
+            break;
+
+        case 'get_recipes_search':
+            $all = $db->getRecipes();
+            $rows = array_map(function($r) {
+                return [
+                    'id'             => $r['id'],
+                    'title'          => $r['title'],
+                    'category'       => $r['category'] ?? '',
+                    'contributor'    => $r['contributor'] ?? '',
+                    'tags'           => $r['tags'] ?? '',
+                    'updated_at'     => $r['updated_at'] ?? '',
+                    'meal_type'      => '',
+                    'cuisine'        => '',
+                    'main_ingredient'=> '',
+                    'method'         => '',
+                ];
+            }, $all ?? []);
+            sendResponse(200, $rows);
+            break;
+
+        default:
+            sendResponse(404, ['error' => "Unknown action: $action"]);
+    }
+    exit();
 }
 
 // Route the request

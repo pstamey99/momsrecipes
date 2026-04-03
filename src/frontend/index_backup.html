@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paul Stamey</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        p {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .link-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .link-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .link-card .subtitle {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            p {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Paul Stamey</h1>
+        <p>Welcome to my personal website</p>
+        
+        <div class="links">
+            <a href="momsrecipes/index.html" class="link-card">
+                <div>Mom's Recipes</div>
+                <div class="subtitle">Family recipe collection</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>'''
+        
+        with open(self.output_dir / 'index.html', 'w', encoding='utf-8') as f:
+            f.write(html_content)
+    
+    def _generate_momsrecipes_page(self, recipes):
+        """Generate mom's recipes index page with authentication"""
+        html_content = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mom's Recipes - Family Recipe Collection</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Authentication Styles */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .auth-overlay.hidden {
+            display: none;
+        }
+        
+        .auth-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .auth-header h1 {
+            color: #8B4513;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .auth-header p {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+            border: none;
+            background: none;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .auth-tab.active {
+            color: #8B4513;
+            border-bottom: 3px solid #8B4513;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8B4513;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #8B4513;
+        }
+        
+        .auth-button {
+            width: 100%;
+            padding: 15px;
+            background: #8B4513;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .auth-button:hover {
+            background: #A0522D;
+        }
+        
+        .auth-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .auth-message.error {
+            background: #ffe6e6;
+            color: #c00;
+        }
+        
+        .auth-message.success {
+            background: #e6ffe6;
+            color: #070;
+        }
+        
+        .auth-help {
+            margin-top: 15px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Import Recipe Button */
+        .import-recipe-btn {
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.88em;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 14px;
+            box-shadow: 0 3px 12px rgba(153,50,204,0.35);
+            transition: all 0.2s;
+            vertical-align: middle;
+        }
+        .import-recipe-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 16px rgba(153,50,204,0.5);
+        }
+
+        /* Import Modal */
+        .import-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9000;
+            overflow-y: auto;
+            padding: 30px 16px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .import-modal-overlay.active { display: flex; }
+
+        .import-modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 680px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        .import-modal-close {
+            position: absolute;
+            top: 14px; right: 18px;
+            background: none; border: none;
+            font-size: 1.4em; cursor: pointer;
+            color: #888; z-index: 10;
+            transition: color 0.2s;
+        }
+        .import-modal-close:hover { color: #333; }
+
+        .import-modal-header {
+            background: linear-gradient(135deg, #ff69b4 0%, #9932cc 100%);
+            color: white;
+            padding: 28px 30px 22px;
+            text-align: center;
+        }
+        .import-modal-icon { font-size: 2.4em; margin-bottom: 6px; }
+        .import-modal-header h2 { margin: 0 0 6px; font-size: 1.5em; }
+        .import-modal-header p  { margin: 0; opacity: 0.88; font-size: 0.88em; }
+
+        .import-step { padding: 24px 28px 28px; }
+
+        .import-drop-zone {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+            margin-bottom: 16px;
+        }
+        .import-drop-zone:hover, .import-drop-zone.dragover {
+            border-color: #ff69b4;
+            background: #fff0f8;
+        }
+        .import-drop-icon { font-size: 2.4em; margin-bottom: 8px; }
+        .import-drop-title { font-weight: 700; color: #333; margin: 0 0 4px; font-size: 1em; }
+        .import-drop-sub   { color: #888; font-size: 0.83em; margin: 0; }
+
+        #import-preview-img {
+            max-height: 200px;
+            max-width: 100%;
+            border-radius: 8px;
+            border: 2px solid #ffb3d9;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+            display: block;
+            margin: 0 auto 10px;
+        }
+        .import-change-btn {
+            display: inline-block;
+            font-size: 0.8em;
+            color: #888;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            padding: 3px 10px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        .import-change-btn:hover { color: #e91e8c; border-color: #e91e8c; }
+
+        #import-extra-prompt {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 0.88em;
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #import-extra-prompt:focus { border-color: #ff69b4; }
+
+        .import-extract-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 13px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(153,50,204,0.3);
+        }
+        .import-extract-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(153,50,204,0.45);
+        }
+        .import-extract-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        .import-status {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            text-align: center;
+        }
+        .import-status.info  { background: #e8f0fe; color: #1a56b0; }
+        .import-status.error { background: #fee; color: #c00; border: 1px solid #fcc; }
+        .import-status.success { background: #e6f9f0; color: #0a6b3a; }
+
+        /* Review step */
+        .import-review-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .import-field-full  { grid-column: 1 / -1; }
+        .import-field-half  { grid-column: span 1; }
+        .import-review-grid label {
+            display: block;
+            font-size: 0.78em;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .import-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: #aaa; }
+        .ir-input, .ir-select, .ir-textarea {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid #eee;
+            border-radius: 7px;
+            padding: 9px 11px;
+            font-family: inherit;
+            font-size: 0.9em;
+            outline: none;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        .ir-input:focus, .ir-select:focus, .ir-textarea:focus { border-color: #ff69b4; }
+        .ir-textarea { resize: vertical; }
+
+        .import-action-row {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .import-back-btn {
+            background: #f0f0f0;
+            color: #555;
+            border: none;
+            padding: 11px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .import-back-btn:hover { background: #e0e0e0; }
+        .import-save-btn {
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 11px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(153,50,204,0.3);
+        }
+        .import-save-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .import-save-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        @media (max-width: 500px) {
+            .import-review-grid { grid-template-columns: 1fr; }
+            .import-field-half  { grid-column: span 1; }
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .user-info.visible {
+            display: block;
+        }
+        
+        .user-info .username {
+            color: #8B4513;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .logout-btn {
+            background: #E74C3C;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .logout-btn:hover {
+            background: #C0392B;
+        }
+        
+        .main-content {
+            display: none;
+        }
+        
+        .main-content.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Authentication Overlay -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>🍳 Mom's Recipes</h1>
+                <p>Family Members Only</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchTab('register')">Register</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="auth-button">🔓 Login</button>
+                
+                <div id="login-message" class="auth-message" style="display:none;"></div>
+                
+                <div class="auth-help">
+                    <a href="#" onclick="showPasswordReset(); return false;" style="color: #ff69b4; text-decoration: none;">Forgot password?</a>
+                </div>
+            </form>
+            
+            <!-- Password Reset Form -->
+            <form id="reset-form" class="auth-form" onsubmit="handlePasswordReset(event)">
+                <div class="form-group">
+                    <label for="reset-username">Username</label>
+                    <input type="text" id="reset-username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reset-fullname">Full Name (for verification)</label>
+                    <input type="text" id="reset-fullname" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reset-new-password">New Password</label>
+                    <input type="password" id="reset-new-password" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reset-confirm-password">Confirm New Password</label>
+                    <input type="password" id="reset-confirm-password" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <button type="submit" class="auth-button">🔑 Reset Password</button>
+                
+                <div id="reset-message" class="auth-message" style="display:none;"></div>
+                
+                <div class="auth-help">
+                    <a href="#" onclick="showLoginForm(); return false;" style="color: #ff69b4; text-decoration: none;">← Back to login</a>
+                </div>
+            </form>
+            
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" required minlength="3" autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-confirm">Confirm Password</label>
+                    <input type="password" id="register-confirm" required minlength="6" autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-fullname">Full Name</label>
+                    <input type="text" id="register-fullname" required placeholder="e.g., John Smith">
+                </div>
+                
+                <button type="submit" class="auth-button">📝 Register</button>
+                
+                <div id="register-message" class="auth-message" style="display:none;"></div>
+                
+                <div class="auth-help">
+                    Registration is for family members only
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- User Info (shown when logged in) -->
+    <div id="user-info" class="user-info">
+        <span class="username" id="current-username"></span>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+    
+    <!-- Main Content (hidden until logged in) -->
+    <div id="main-content" class="main-content">
+        <div class="header">
+            <div class="header-content">
+                <h1>Mom's Recipes</h1>
+                <p class="subtitle">A collection of treasured family recipes</p>
+                <a href="../" class="back-link">← Back to home</a>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="search" placeholder="Search recipes...">
+            </div>
+            
+            <div class="filters">
+                <select id="meal-type">
+                    <option value="">All Meal Types</option>
+                </select>
+                
+                <select id="cuisine">
+                    <option value="">All Cuisines</option>
+                </select>
+                
+                <select id="ingredient">
+                    <option value="">All Ingredients</option>
+                </select>
+                
+                <select id="method">
+                    <option value="">All Methods</option>
+                </select>
+                
+                <select id="from-source">
+                    <option value="">All Sources</option>
+                </select>
+                
+                <button id="clear-filters">Clear All</button>
+            </div>
+            
+            <div class="stats">
+                <span id="recipe-count">0 recipes</span>
+                <button id="import-recipe-btn" class="import-recipe-btn" onclick="openImportModal()">📸 Import Recipe</button>
+            </div>
+        </div>
+        
+        <!-- Main content with blog sidebar -->
+        <div class="content-with-sidebar">
+            <!-- Blog Section (Left Sidebar) -->
+            <div class="blog-section">
+                <h2>Recipe Memories</h2>
+                <p class="blog-subtitle">Share your stories and memories about these recipes</p>
+                
+                <!-- New Post Form -->
+                <div class="new-post-form">
+                    <h3>Share a Memory</h3>
+                    <textarea id="blog-content" placeholder="Share your memory about a recipe..." rows="4" maxlength="500"></textarea>
+                    <button id="post-memory" class="btn-primary">Post Memory</button>
+                </div>
+                
+                <!-- Blog Posts List -->
+                <div id="blog-posts" class="blog-posts">
+                    <!-- Posts will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Recipe Grid (Center/Main Area) -->
+            <div class="recipe-grid" id="recipe-grid">
+                <!-- Recipe cards will be inserted here by JavaScript -->
+            </div>
+            
+            <!-- Title Changes Log (Right Sidebar) -->
+            <div class="title-changes-section">
+                <h2>Recent Title Changes</h2>
+                <p class="title-changes-subtitle">Track recipe name updates</p>
+                
+                <!-- Title Changes List -->
+                <div id="title-changes-log" class="title-changes-list">
+                    <!-- Title changes will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Photo Import Modal -->
+    <div id="import-modal" class="import-modal-overlay" onclick="handleImportOverlayClick(event)">
+        <div class="import-modal-content">
+            <button class="import-modal-close" onclick="closeImportModal()">✕</button>
+
+            <!-- Step 1: Upload -->
+            <div id="import-step-upload" class="import-step">
+                <div class="import-modal-header">
+                    <div class="import-modal-icon">📸</div>
+                    <h2>Import Recipe from Photo</h2>
+                    <p>Upload a photo of a handwritten or printed recipe — Claude will read and extract it</p>
+                </div>
+                <div class="import-drop-zone" id="import-drop-zone" onclick="document.getElementById('import-file-input').click()">
+                    <input type="file" id="import-file-input" accept="image/*" style="display:none" onchange="importHandleFile(event)">
+                    <div id="import-drop-content">
+                        <div class="import-drop-icon">🍽️</div>
+                        <p class="import-drop-title">Drop a recipe photo here</p>
+                        <p class="import-drop-sub">or click to browse &nbsp;·&nbsp; JPG, PNG, HEIC, WEBP</p>
+                    </div>
+                    <div id="import-preview-wrap" style="display:none">
+                        <img id="import-preview-img" src="" alt="preview">
+                        <span class="import-change-btn" onclick="event.stopPropagation(); importResetPhoto()">✕ Change photo</span>
+                    </div>
+                </div>
+                <textarea id="import-extra-prompt" placeholder="Optional: extra context e.g. 'This is from Grandma Helen' or 'Focus on the ingredients list'"></textarea>
+                <button id="import-extract-btn" class="import-extract-btn" onclick="importExtract()" disabled>✨ Extract Recipe</button>
+                <div id="import-status" class="import-status" style="display:none"></div>
+            </div>
+
+            <!-- Step 2: Review & Save -->
+            <div id="import-step-review" class="import-step" style="display:none">
+                <div class="import-modal-header">
+                    <h2>✅ Review & Save</h2>
+                    <p>All fields are editable — fix anything before saving</p>
+                </div>
+                <div class="import-review-grid">
+                    <div class="import-field-full">
+                        <label>Title</label>
+                        <input type="text" id="ir-title" class="ir-input">
+                    </div>
+                    <div class="import-field-half">
+                        <label>From (family source)</label>
+                        <input type="text" id="ir-from" class="ir-input" placeholder="e.g. Grandma Helen">
+                    </div>
+                    <div class="import-field-half">
+                        <label>Meal Type</label>
+                        <select id="ir-meal-type" class="ir-select">
+                            <option value="">-- select --</option>
+                            <option>Breakfast</option><option>Lunch</option><option>Dinner</option>
+                            <option>Dessert</option><option>Snack</option><option>Appetizer</option>
+                            <option>Side Dish</option><option>Beverage</option>
+                        </select>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Cuisine</label>
+                        <select id="ir-cuisine" class="ir-select">
+                            <option value="">-- select --</option>
+                            <option>American</option><option>Italian</option><option>Mexican</option>
+                            <option>Chinese</option><option>Japanese</option><option>French</option>
+                            <option>Indian</option><option>Thai</option><option>Mediterranean</option>
+                            <option>Greek</option><option>Spanish</option><option>Middle Eastern</option>
+                            <option>Scandinavian</option><option>German</option><option>Other</option>
+                        </select>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Main Ingredient</label>
+                        <select id="ir-ingredient" class="ir-select">
+                            <option value="">-- select --</option>
+                            <option>Chicken</option><option>Beef</option><option>Pork</option>
+                            <option>Fish</option><option>Seafood</option><option>Vegetables</option>
+                            <option>Pasta</option><option>Rice</option><option>Beans</option>
+                            <option>Eggs</option><option>Cheese</option><option>Bread</option>
+                            <option>Fruit</option><option>Nuts</option><option>Other</option>
+                        </select>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Method</label>
+                        <select id="ir-method" class="ir-select">
+                            <option value="">-- select --</option>
+                            <option>Baked</option><option>Fried</option><option>Grilled</option>
+                            <option>Roasted</option><option>Steamed</option><option>Boiled</option>
+                            <option>Sautéed</option><option>Slow Cooker</option>
+                            <option>Pressure Cooker</option><option>No-Bake</option><option>Raw</option><option>Other</option>
+                        </select>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Ingredients <span class="import-hint">(one per line)</span></label>
+                        <textarea id="ir-ingredients" class="ir-textarea" rows="8"></textarea>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Directions <span class="import-hint">(one step per line)</span></label>
+                        <textarea id="ir-directions" class="ir-textarea" rows="8"></textarea>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Notes <span class="import-hint">(optional)</span></label>
+                        <textarea id="ir-notes" class="ir-textarea" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="import-action-row">
+                    <button class="import-back-btn" onclick="importGoBack()">← Back</button>
+                    <button id="import-save-btn" class="import-save-btn" onclick="importSave()">💾 Save to Database</button>
+                </div>
+                <div id="import-save-status" class="import-status" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+    <script src="auth.js"></script>
+    <script>
+    // ========================================================================
+    // API-backed Blog & Title Changes
+    // ========================================================================
+    const API_URL = 'api/index.php';
+
+    function getCurrentUser() {
+        const s = localStorage.getItem('momsrecipes_current_user');
+        if (!s) return null;
+        try { return JSON.parse(s); } catch(e) { return null; }
+    }
+
+    // ---- Blog: Load from API ----
+    async function loadBlogPosts() {
+        try {
+            const r = await fetch(API_URL + '?action=get_blog');
+            if (!r.ok) return [];
+            const posts = await r.json();
+            return Array.isArray(posts) ? posts : [];
+        } catch(e) { console.error('Blog load error:', e); return []; }
+    }
+
+    function normalizePosts(post) {
+        return {
+            ...post,
+            likes:   typeof post.likes   === 'string' ? JSON.parse(post.likes   || '0')  : (post.likes || 0),
+            replies: typeof post.replies === 'string' ? JSON.parse(post.replies || '[]') : (post.replies || [])
+        };
+    }
+
+    // ---- Blog: Display ----
+    function displayBlogPosts(posts) {
+        const container = document.getElementById('blog-posts');
+        if (posts.length === 0) {
+            container.innerHTML = '<p class="no-posts">No memories shared yet. Be the first!</p>';
+            return;
+        }
+        const me = getCurrentUser();
+        const myName = me ? (me.fullname || me.username) : '';
+
+        container.innerHTML = posts.map(raw => {
+            const post = normalizePosts(raw);
+            let authorName = post.author || 'Anonymous';
+            try { const d = JSON.parse(post.author); authorName = d.fullname || d.username; } catch(e) {}
+
+            const delBtn = (authorName === myName) ? `<button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>` : '';
+            const replyCount = post.replies.length;
+            const replyText  = replyCount > 0 ? `(${replyCount})` : '';
+
+            return `
+            <div class="blog-post" data-id="${post.id}">
+                <div class="post-meta">
+                    <span class="post-author">${escapeHtml(authorName)}</span>
+                    <span class="post-date">${formatDate(post.date)}</span>
+                </div>
+                <p class="post-content">${escapeHtml(post.content)}</p>
+                <div class="post-actions">
+                    <button class="like-btn" onclick="likePost(${post.id})">❤️ ${post.likes}</button>
+                    <button class="reply-btn" onclick="toggleReplyForm(${post.id})">💬 Reply ${replyText}</button>
+                    ${delBtn}
+                </div>
+                <div class="reply-form" id="reply-form-${post.id}" style="display:none;">
+                    <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Write a reply..." rows="2" maxlength="300"></textarea>
+                    <div class="reply-form-actions">
+                        <button class="btn-reply" onclick="submitReply(${post.id})">Post Reply</button>
+                        <button class="btn-cancel" onclick="toggleReplyForm(${post.id})">Cancel</button>
+                    </div>
+                </div>
+                <div class="replies-section" id="replies-${post.id}">
+                    ${displayReplies(post.replies, post.id)}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function displayReplies(replies, postId) {
+        if (!replies || replies.length === 0) return '';
+        const me = getCurrentUser();
+        const myName = me ? (me.fullname || me.username) : '';
+        return replies.map(reply => {
+            let authorName = reply.author || reply.user || 'Anonymous';
+            try { const d = JSON.parse(reply.author); authorName = d.fullname || d.username; } catch(e) {}
+            const delBtn = (authorName === myName) ? `<button class="delete-reply-btn" onclick="deleteReply(${postId}, ${reply.id})">Delete</button>` : '';
+            return `
+            <div class="reply-item">
+                <div class="reply-meta">
+                    <span class="reply-author">${escapeHtml(authorName)}</span>
+                    <span class="reply-date">${formatDate(reply.date)}</span>
+                </div>
+                <p class="reply-content">${escapeHtml(reply.content)}</p>
+                ${delBtn}
+            </div>`;
+        }).join('');
+    }
+
+    // ---- Blog: Actions via API ----
+    async function likePost(postId) {
+        try { 
+            const u = getCurrentUser();
+            await fetch(API_URL + '?action=like_blog&id=' + postId, { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user: u ? (u.fullname || u.username) : 'Anonymous' })
+            }); 
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    async function deletePost(postId) {
+        if (!confirm('Delete this memory?')) return;
+        try { await fetch(API_URL + '?action=delete_blog&id=' + postId, { method: 'DELETE' }); } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    async function submitReply(postId) {
+        const user = getCurrentUser();
+        if (!user) { alert('You must be logged in to reply'); return; }
+        const content = document.getElementById('reply-input-' + postId).value.trim();
+        if (!content) { alert('Please write a reply'); return; }
+        try {
+            await fetch(API_URL + '?action=reply_blog&id=' + postId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content, author: user.fullname || user.username, date: new Date().toISOString() })
+            });
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    async function deleteReply(postId, replyId) {
+        if (!confirm('Delete this reply?')) return;
+        try {
+            await fetch(API_URL + '?action=delete_reply&id=' + postId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ reply_id: replyId })
+            });
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    function toggleReplyForm(postId) {
+        const form = document.getElementById('reply-form-' + postId);
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ---- Blog: Create post via API ----
+    document.addEventListener('DOMContentLoaded', async function() {
+        displayBlogPosts(await loadBlogPosts());
+
+        document.getElementById('post-memory').addEventListener('click', async function() {
+            const content = document.getElementById('blog-content').value.trim();
+            if (!content) { alert('Please write a memory to share'); return; }
+            const user = getCurrentUser();
+            if (!user) { alert('You must be logged in to post'); return; }
+            try {
+                await fetch(API_URL + '?action=create_blog', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title: '', content, author: user.fullname || user.username, date: new Date().toISOString() })
+                });
+                document.getElementById('blog-content').value = '';
+                displayBlogPosts(await loadBlogPosts());
+            } catch(e) { alert('Error posting memory.'); }
+        });
+    });
+
+    // ---- Title Changes: Load from API ----
+    async function loadTitleChanges() {
+        try {
+            const r = await fetch(API_URL + '?action=get_title_changes');
+            if (!r.ok) return [];
+            return await r.json();
+        } catch(e) { return []; }
+    }
+
+    async function displayTitleChanges() {
+        const changes = await loadTitleChanges();
+        const container = document.getElementById('title-changes-log');
+        if (!container) return;
+        if (changes.length === 0) {
+            container.innerHTML = '<div class="no-title-changes">No title changes yet</div>';
+            return;
+        }
+        container.innerHTML = changes.slice(0, 20).map(c => {
+            const from = c.old_title || c.from || '';
+            const to   = c.new_title || c.to   || '';
+            const who  = c.changed_by || c.user || '';
+            const when = c.changed_at || c.timestamp || c.date || '';
+            return `
+            <div class="title-change-item">
+                <div class="change-time">${formatDate(when)}</div>
+                <div class="change-user">👤 ${escapeHtml(who)}</div>
+                <div class="change-details">
+                    <span class="old-title">❌ ${escapeHtml(from)}</span>
+                    <span class="new-title">✓ ${escapeHtml(to)}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        displayTitleChanges();
+        setInterval(displayTitleChanges, 30000);
+    });
+
+    // ---- Helpers ----
+    function formatDate(dateStr) {
+        const d = new Date(dateStr); const now = new Date();
+        const days = Math.floor((now - d) / 86400000);
+        if (days === 0) return 'Today'; if (days === 1) return 'Yesterday';
+        if (days < 7) return days + ' days ago'; return d.toLocaleDateString();
+    }
+
+    // ── Photo Import Modal ─────────────────────────────────────────
+    let importImageBase64 = null;
+    let importImageMediaType = null;
+
+    function openImportModal() {
+        document.getElementById('import-modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeImportModal() {
+        document.getElementById('import-modal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    function handleImportOverlayClick(e) {
+        if (e.target === document.getElementById('import-modal')) closeImportModal();
+    }
+    (function() {
+        var dz = document.getElementById('import-drop-zone');
+        if (!dz) return;
+        dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', function() { dz.classList.remove('dragover'); });
+        dz.addEventListener('drop', function(e) {
+            e.preventDefault(); dz.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) importLoadFile(e.dataTransfer.files[0]);
+        });
+    })();
+    function importHandleFile(e) { if (e.target.files[0]) importLoadFile(e.target.files[0]); }
+    function importLoadFile(file) {
+        if (!file.type.startsWith('image/')) { importShowStatus('import-status','Please upload an image file.','error'); return; }
+        importImageMediaType = (file.type === 'image/jpg') ? 'image/jpeg' : file.type;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            importImageBase64 = ev.target.result.split(',')[1];
+            document.getElementById('import-preview-img').src = ev.target.result;
+            document.getElementById('import-drop-content').style.display = 'none';
+            document.getElementById('import-preview-wrap').style.display = 'block';
+            document.getElementById('import-extract-btn').disabled = false;
+            importHideStatus('import-status');
+        };
+        reader.readAsDataURL(file);
+    }
+    function importResetPhoto() {
+        importImageBase64 = null; importImageMediaType = null;
+        document.getElementById('import-file-input').value = '';
+        document.getElementById('import-drop-content').style.display = 'block';
+        document.getElementById('import-preview-wrap').style.display = 'none';
+        document.getElementById('import-extract-btn').disabled = true;
+    }
+    function importGoBack() {
+        document.getElementById('import-step-review').style.display = 'none';
+        document.getElementById('import-step-upload').style.display = 'block';
+    }
+    async function importExtract() {
+        if (!importImageBase64) return;
+        var extra = document.getElementById('import-extra-prompt').value.trim();
+        var btn = document.getElementById('import-extract-btn');
+        btn.disabled = true; btn.textContent = '\u23f3 Extracting\u2026';
+        importShowStatus('import-status','Sending to Claude \u2014 this may take 10\u201320 seconds\u2026','info');
+        var sys = 'You are a recipe extraction specialist. Return ONLY a valid JSON object: {"title":"","family_source":"","meal_type":"","cuisine":"","main_ingredient":"","method":"","ingredients":[],"directions":[],"notes":""}';
+        try {
+            var r = await fetch('https://api.anthropic.com/v1/messages', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:sys,
+                    messages:[{role:'user',content:[
+                        {type:'image',source:{type:'base64',media_type:importImageMediaType,data:importImageBase64}},
+                        {type:'text',text:'Extract this recipe into JSON.'+(extra?' Context: '+extra:'')}
+                    ]}]
+                })
+            });
+            if (!r.ok) { var er=await r.json().catch(function(){return{};}); throw new Error(er.error&&er.error.message?er.error.message:'API error '+r.status); }
+            var data = await r.json();
+            var raw = data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+            var recipe = JSON.parse(raw.replace(/```json|```/g,'').trim());
+            importPopulateReview(recipe);
+            document.getElementById('import-step-upload').style.display = 'none';
+            document.getElementById('import-step-review').style.display = 'block';
+            importHideStatus('import-status');
+        } catch(err) { importShowStatus('import-status','Error: '+err.message,'error'); }
+        finally { btn.disabled=false; btn.textContent='\u2728 Extract Recipe'; }
+    }
+    function importPopulateReview(recipe) {
+        document.getElementById('ir-title').value       = recipe.title||'';
+        document.getElementById('ir-from').value        = recipe.family_source||'';
+        document.getElementById('ir-ingredients').value = (recipe.ingredients||[]).join('\\n');
+        document.getElementById('ir-directions').value  = (recipe.directions||[]).join('\n');
+        document.getElementById('ir-notes').value       = recipe.notes||'';
+        [['ir-meal-type','meal_type'],['ir-cuisine','cuisine'],['ir-ingredient','main_ingredient'],['ir-method','method']].forEach(function(p) {
+            var val=recipe[p[1]]||'', el=document.getElementById(p[0]);
+            var opt=Array.from(el.options).find(function(o){return o.value.toLowerCase()===val.toLowerCase();});
+            if(opt) el.value=opt.value;
+        });
+    }
+    async function importSave() {
+        var title = document.getElementById('ir-title').value.trim();
+        if (!title) { importShowStatus('import-save-status','Please enter a recipe title.','error'); return; }
+        var btn = document.getElementById('import-save-btn');
+        btn.disabled=true; btn.textContent='\u23f3 Saving\u2026';
+        importShowStatus('import-save-status','Saving to database\u2026','info');
+        var ing = document.getElementById('ir-ingredients').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+        var dir = document.getElementById('ir-directions').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+        var u = getCurrentUser();
+        var payload = {
+            title:title, family_source:document.getElementById('ir-from').value.trim(),
+            meal_type:document.getElementById('ir-meal-type').value, cuisine:document.getElementById('ir-cuisine').value,
+            main_ingredient:document.getElementById('ir-ingredient').value, method:document.getElementById('ir-method').value,
+            ingredients:ing, directions:dir, notes:document.getElementById('ir-notes').value.trim(),
+            uuid:(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)),
+            contributor:u?(u.username||'anonymous'):'anonymous',
+            image_data:importImageBase64||'', image_filename:importImageBase64?'imported_recipe.jpg':''
+        };
+        try {
+            var r = await fetch(API_URL+'?action=create_recipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+            if (!r.ok) { var er=await r.json().catch(function(){return{};}); throw new Error(er.error||'Save failed ('+r.status+')'); }
+            var saved=await r.json(), newId=(saved.recipe&&saved.recipe.id)||saved.id||payload.uuid;
+            var rec=Object.assign({},payload,{id:newId,url:'recipes/'+payload.uuid+'.html'});
+            allRecipes.unshift(rec); filteredRecipes=allRecipes.slice(); populateFilters(); displayRecipes();
+            importShowStatus('import-save-status','\u2705 Recipe saved!','success');
+            btn.textContent='\u2705 Saved!';
+            setTimeout(function(){
+                closeImportModal(); importResetPhoto();
+                document.getElementById('import-step-review').style.display='none';
+                document.getElementById('import-step-upload').style.display='block';
+                document.getElementById('import-extra-prompt').value='';
+                btn.textContent='\U0001f4be Save to Database'; btn.disabled=false;
+                importHideStatus('import-save-status');
+            },2200);
+        } catch(err) { importShowStatus('import-save-status','Error: '+err.message,'error'); btn.disabled=false; btn.textContent='\U0001f4be Save to Database'; }
+    }
+    function importShowStatus(id,msg,type){var el=document.getElementById(id);if(!el)return;el.textContent=msg;el.className='import-status '+type;el.style.display='block';}
+    function importHideStatus(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    </script>
+</body>
+</html>

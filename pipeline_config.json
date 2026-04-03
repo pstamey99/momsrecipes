@@ -1,8 +1,0 @@
-{
-    "ftp_host": "ftp.paulstamey.com",
-    "ftp_user": "paul.stamey@paulstamey.com",
-    "ftp_pass": "Conradisnot64!!",
-    "ftp_remote_dir": "/public_html/momsrecipes",
-    "api_url": "https://paulstamey.com/momsrecipes/api/index.php",
-    "api_key": "3989d3f181341f17a5ed6b65c72b2ffc0df6343a4ca586bdea3ef0d149d4c130"
-}

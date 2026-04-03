@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Mom's Recipes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #f5f0e8;
+    color: #3d2b1f;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #5a3e8a 0%, #3d2b6b 100%);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header h1 { color: #fff; font-size: 18px; font-weight: bold; }
+  .header-sub { color: #c9b8e8; font-size: 13px; }
+  .back-btn {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── Access denied ── */
+  #access-denied {
+    display: none;
+    text-align: center;
+    padding: 80px 20px;
+  }
+  #access-denied h2 { color: #c0392b; font-size: 22px; margin-bottom: 12px; }
+  #access-denied p { color: #666; }
+
+  /* ── Main layout ── */
+  #admin-content { display: none; padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+  /* ── Section card ── */
+  .card {
+    background: #fff;
+    border: 1px solid #d4c5a9;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .card-header {
+    background: #5a3e8a;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .card-header h2 { color: #fff; font-size: 16px; }
+  .card-header .count { color: #c9b8e8; font-size: 13px; }
+
+  /* ── Filters bar ── */
+  .filters-bar {
+    padding: 14px 20px;
+    background: #faf7f2;
+    border-bottom: 1px solid #e8dcc8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .filters-bar label { font-size: 13px; color: #666; font-weight: bold; }
+  .filters-bar select,
+  .filters-bar input {
+    padding: 6px 10px;
+    border: 1px solid #d4c5a9;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: #3d2b1f;
+  }
+  .filters-bar select:focus,
+  .filters-bar input:focus { outline: none; border-color: #5a3e8a; }
+
+  .btn-filter {
+    padding: 6px 16px;
+    background: #5a3e8a;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-filter:hover { background: #4a2e7a; }
+  .btn-clear {
+    padding: 6px 14px;
+    background: #fff;
+    color: #5a3e8a;
+    border: 1px solid #5a3e8a;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-clear:hover { background: #f0ebf8; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: #f0ebf8;
+    color: #5a3e8a;
+    font-weight: bold;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 2px solid #d4c5a9;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { background: #e4d8f5; }
+  thead th .sort-arrow { margin-left: 4px; opacity: 0.5; font-size: 11px; }
+  thead th.sorted .sort-arrow { opacity: 1; color: #5a3e8a; }
+
+  tbody tr { border-bottom: 1px solid #f0ebe0; transition: background 0.1s; }
+  tbody tr:hover { background: #faf7f2; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 16px; vertical-align: middle; }
+
+  .td-username {
+    font-weight: bold;
+    color: #5a3e8a;
+  }
+  .td-action span {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .action-login_success  { background: #d4edda; color: #155724; }
+  .action-login_failed   { background: #f8d7da; color: #721c24; }
+  .action-logout         { background: #d1ecf1; color: #0c5460; }
+  .action-recipe_created { background: #fff3cd; color: #856404; }
+  .action-recipe_deleted { background: #f8d7da; color: #721c24; }
+
+  .td-ip { font-family: monospace; font-size: 13px; color: #666; }
+  .td-time { font-size: 13px; color: #888; white-space: nowrap; }
+  .td-detail { font-size: 13px; color: #555; max-width: 220px;
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Empty / loading states ── */
+  .empty-state {
+    padding: 40px;
+    text-align: center;
+    color: #aaa;
+    font-size: 14px;
+  }
+  .loading-spinner {
+    padding: 40px;
+    text-align: center;
+    color: #5a3e8a;
+    font-size: 14px;
+  }
+
+  /* ── Pagination ── */
+  .pagination {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #e8dcc8;
+    font-size: 13px;
+    color: #666;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pagination-btns { display: flex; gap: 6px; }
+  .pagination-btns button {
+    padding: 4px 12px;
+    border: 1px solid #d4c5a9;
+    background: #fff;
+    color: #5a3e8a;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .pagination-btns button:hover:not(:disabled) { background: #f0ebf8; }
+  .pagination-btns button:disabled { opacity: 0.4; cursor: default; }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #faf7f2;
+    border-bottom: 1px solid #e8dcc8;
+    flex-wrap: wrap;
+  }
+  .stat-box {
+    background: #fff;
+    border: 1px solid #e8dcc8;
+    border-radius: 6px;
+    padding: 10px 18px;
+    text-align: center;
+    min-width: 90px;
+  }
+  .stat-box .stat-num { font-size: 22px; font-weight: bold; color: #5a3e8a; }
+  .stat-box .stat-label { font-size: 11px; color: #999; margin-top: 2px; }
+  .toggle-admin {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #5a3e8a;
+    font-family: inherit;
+  }
+  .toggle-admin input[type=checkbox] {
+    width: 16px; height: 16px;
+    accent-color: #5a3e8a;
+    cursor: pointer;
+  }
+  .toggle-admin:hover { color: #3d2b6b; }
+  .badge-super { background: #fff3cd; color: #856404; padding: 2px 10px;
+                 border-radius: 12px; font-size: 12px; font-weight: bold; }
+  .badge-admin { background: #e8e0f5; color: #5a3e8a; padding: 2px 10px;
+                 border-radius: 12px; font-size: 12px; font-weight: bold; }
+  .badge-user  { background: #f0f0f0; color: #888; padding: 2px 10px;
+                 border-radius: 12px; font-size: 12px; }
+  .badge-active   { background: #d4edda; color: #155724; padding: 2px 8px;
+                    border-radius: 10px; font-size: 12px; }
+  .badge-inactive { background: #f8d7da; color: #721c24; padding: 2px 8px;
+                    border-radius: 10px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span style="font-size:22px;">🛡️</span>
+    <div>
+      <h1>Admin Panel</h1>
+      <div class="header-sub">Mom's Recipes</div>
+    </div>
+  </div>
+  <a href="index.html" class="back-btn">← Back to Site</a>
+</div>
+
+<div id="access-denied">
+  <h2>🚫 Access Denied</h2>
+  <p>This page is only accessible to administrators.</p>
+  <p style="margin-top:12px;"><a href="index.html" style="color:#5a3e8a;">← Return to Mom's Recipes</a></p>
+</div>
+
+<div id="admin-content">
+
+  <!-- Activity Log -->
+  <div class="card">
+    <div class="card-header">
+      <h2>📋 Activity Log</h2>
+      <span class="count" id="log-count-label">Loading…</span>
+    </div>
+
+    <div class="stats-row" id="stats-row" style="display:none;">
+      <div class="stat-box">
+        <div class="stat-num" id="stat-total">—</div>
+        <div class="stat-label">Total Events</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-logins">—</div>
+        <div class="stat-label">Logins</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-failures">—</div>
+        <div class="stat-label">Failed Logins</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-recipes">—</div>
+        <div class="stat-label">Recipes Added</div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <label for="filter-user">User:</label>
+      <select id="filter-user">
+        <option value="">All users</option>
+      </select>
+
+      <label for="filter-action">Action:</label>
+      <select id="filter-action">
+        <option value="">All actions</option>
+        <option value="login_success">Login (success)</option>
+        <option value="login_failed">Login (failed)</option>
+        <option value="logout">Logout</option>
+        <option value="recipe_created">Recipe created</option>
+        <option value="recipe_deleted">Recipe deleted</option>
+      </select>
+
+      <label for="filter-search">Search:</label>
+      <input type="text" id="filter-search" placeholder="username or detail…" style="width:180px;">
+
+      <button class="btn-filter" onclick="applyFilters()">Apply</button>
+      <button class="btn-clear" onclick="clearFilters()">Clear</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="log-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('username')" id="th-username">
+              Username <span class="sort-arrow">↕</span>
+            </th>
+            <th onclick="sortBy('action')" id="th-action">
+              Action <span class="sort-arrow">↕</span>
+            </th>
+            <th onclick="sortBy('created_at')" id="th-created_at" class="sorted">
+              Timestamp <span class="sort-arrow">↓</span>
+            </th>
+            <th id="th-ip_address">IP Address</th>
+            <th id="th-detail">Detail</th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody">
+          <tr><td colspan="5" class="loading-spinner">Loading activity log…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <span id="pagination-info">—</span>
+      <div class="pagination-btns">
+        <button id="btn-prev" onclick="changePage(-1)" disabled>← Prev</button>
+        <button id="btn-next" onclick="changePage(1)" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Management (super admin / paul only) -->
+  <div class="card" id="user-mgmt-section" style="display:none;">
+    <div class="card-header">
+      <h2>👥 User Management</h2>
+      <span class="count" id="user-count-label">Loading…</span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="users-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Last Login</th>
+            <th>Member Since</th>
+            <th style="text-align:center;">Admin Access</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          <tr><td colspan="7" class="loading-spinner">Loading users…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /admin-content -->
+
+<script>
+const API_BASE = 'api/index.php';
+const PAGE_SIZE = 50;
+
+let allEntries   = [];   // raw from server
+let filteredRows = [];   // after client-side filter/sort
+let currentPage  = 0;
+let sortField    = 'created_at';
+let sortDir      = 'desc';
+let currentUser  = null;
+
+// ── Bootstrap ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    const s = localStorage.getItem('momsrecipes_current_user');
+    if (!s) { deny(); return; }
+    try { currentUser = JSON.parse(s); } catch(e) { deny(); return; }
+
+    const isSuperAdmin = currentUser.username === 'paul' || currentUser.username === 'pstamey';
+    const isAdmin      = isSuperAdmin || !!currentUser.is_admin;
+
+    if (!isAdmin) {
+        // Double-check server-side in case localStorage is stale
+        fetch('api/index.php?action=check_admin&username=' + encodeURIComponent(currentUser.username))
+            .then(r => r.json())
+            .then(d => {
+                if (d.is_admin) {
+                    currentUser.is_admin = 1;
+                    bootAdmin(d.is_super_admin);
+                } else {
+                    deny();
+                }
+            })
+            .catch(() => deny());
+        return;
+    }
+    bootAdmin(isSuperAdmin);
+});
+
+function bootAdmin(isSuperAdmin) {
+    document.getElementById('admin-content').style.display = 'block';
+    // Show user management section for super admin only
+    const userMgmt = document.getElementById('user-mgmt-section');
+    if (userMgmt) userMgmt.style.display = isSuperAdmin ? 'block' : 'none';
+    loadLog();
+    if (isSuperAdmin) loadUsers();
+}
+
+function deny() {
+    document.getElementById('access-denied').style.display = 'block';
+}
+
+// ── Load data ────────────────────────────────────────────────
+async function loadLog() {
+    try {
+        const url = API_BASE + '?action=get_activity_log'
+            + '&username=' + encodeURIComponent(currentUser.username)
+            + '&limit=500';   // load up to 500, filter client-side
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (!res.ok) {
+            showError(data.error || 'Failed to load log');
+            return;
+        }
+
+        allEntries = data.entries || [];
+
+        // Populate user filter dropdown
+        const sel = document.getElementById('filter-user');
+        (data.users || []).forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u; opt.textContent = u;
+            sel.appendChild(opt);
+        });
+
+        // Stats
+        buildStats();
+        applyFilters();
+
+    } catch(e) {
+        showError('Network error loading activity log');
+    }
+}
+
+function buildStats() {
+    const total    = allEntries.length;
+    const logins   = allEntries.filter(e => e.action === 'login_success').length;
+    const failures = allEntries.filter(e => e.action === 'login_failed').length;
+    const recipes  = allEntries.filter(e => e.action === 'recipe_created').length;
+    document.getElementById('stat-total').textContent    = total;
+    document.getElementById('stat-logins').textContent   = logins;
+    document.getElementById('stat-failures').textContent = failures;
+    document.getElementById('stat-recipes').textContent  = recipes;
+    document.getElementById('stats-row').style.display   = 'flex';
+}
+
+// ── Filtering ────────────────────────────────────────────────
+function applyFilters() {
+    const filterUser   = document.getElementById('filter-user').value.toLowerCase();
+    const filterAction = document.getElementById('filter-action').value;
+    const filterSearch = document.getElementById('filter-search').value.toLowerCase().trim();
+
+    filteredRows = allEntries.filter(e => {
+        if (filterUser   && e.username.toLowerCase() !== filterUser) return false;
+        if (filterAction && e.action !== filterAction) return false;
+        if (filterSearch) {
+            const haystack = (e.username + ' ' + e.detail + ' ' + e.ip_address).toLowerCase();
+            if (!haystack.includes(filterSearch)) return false;
+        }
+        return true;
+    });
+
+    sortRows();
+    currentPage = 0;
+    renderTable();
+}
+
+function clearFilters() {
+    document.getElementById('filter-user').value   = '';
+    document.getElementById('filter-action').value = '';
+    document.getElementById('filter-search').value = '';
+    applyFilters();
+}
+
+// ── Sorting ──────────────────────────────────────────────────
+function sortBy(field) {
+    if (sortField === field) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortField = field;
+        sortDir   = field === 'created_at' ? 'desc' : 'asc';
+    }
+    // Update header arrows
+    document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+    const th = document.getElementById('th-' + field);
+    if (th) {
+        th.classList.add('sorted');
+        th.querySelector('.sort-arrow').textContent = sortDir === 'asc' ? '↑' : '↓';
+    }
+    sortRows();
+    currentPage = 0;
+    renderTable();
+}
+
+function sortRows() {
+    filteredRows.sort((a, b) => {
+        let av = a[sortField] || '';
+        let bv = b[sortField] || '';
+        if (sortField === 'created_at') {
+            av = new Date(av).getTime() || 0;
+            bv = new Date(bv).getTime() || 0;
+        } else {
+            av = av.toString().toLowerCase();
+            bv = bv.toString().toLowerCase();
+        }
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ?  1 : -1;
+        return 0;
+    });
+}
+
+// ── Render ───────────────────────────────────────────────────
+function renderTable() {
+    const tbody  = document.getElementById('log-tbody');
+    const total  = filteredRows.length;
+    const start  = currentPage * PAGE_SIZE;
+    const end    = Math.min(start + PAGE_SIZE, total);
+    const page   = filteredRows.slice(start, end);
+
+    document.getElementById('log-count-label').textContent =
+        total + ' event' + (total !== 1 ? 's' : '');
+
+    if (page.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No activity found</td></tr>';
+        updatePagination(0, 0, 0);
+        return;
+    }
+
+    tbody.innerHTML = page.map(e => {
+        const actionClass = 'action-' + e.action;
+        const actionLabel = {
+            login_success:  '✓ Login',
+            login_failed:   '✗ Login failed',
+            logout:         '⏏ Logout',
+            recipe_created: '＋ Recipe added',
+            recipe_deleted: '✕ Recipe deleted',
+        }[e.action] || e.action;
+
+        const ts = formatTimestamp(e.created_at);
+        const detail = e.detail
+            ? '<span title="' + escHtml(e.detail) + '">' + escHtml(truncate(e.detail, 40)) + '</span>'
+            : '<span style="color:#ccc;">—</span>';
+
+        return '<tr>'
+            + '<td class="td-username">' + escHtml(e.username) + '</td>'
+            + '<td class="td-action"><span class="' + actionClass + '">' + actionLabel + '</span></td>'
+            + '<td class="td-time">' + ts + '</td>'
+            + '<td class="td-ip">' + escHtml(e.ip_address || '—') + '</td>'
+            + '<td class="td-detail">' + detail + '</td>'
+            + '</tr>';
+    }).join('');
+
+    updatePagination(start + 1, end, total);
+}
+
+function updatePagination(start, end, total) {
+    document.getElementById('pagination-info').textContent =
+        total === 0 ? 'No results' : 'Showing ' + start + '–' + end + ' of ' + total;
+    document.getElementById('btn-prev').disabled = currentPage === 0;
+    document.getElementById('btn-next').disabled = end >= total;
+}
+
+function changePage(dir) {
+    const total = filteredRows.length;
+    const maxPage = Math.ceil(total / PAGE_SIZE) - 1;
+    currentPage = Math.max(0, Math.min(currentPage + dir, maxPage));
+    renderTable();
+    window.scrollTo(0, 0);
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function formatTimestamp(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts.replace(' ', 'T') + (ts.includes('Z') ? '' : 'Z'));
+    if (isNaN(d)) return ts;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function truncate(str, len) {
+    return str.length > len ? str.substring(0, len) + '…' : str;
+}
+
+function showError(msg) {
+    document.getElementById('log-tbody').innerHTML =
+        '<tr><td colspan="5" class="empty-state" style="color:#c0392b;">' + escHtml(msg) + '</td></tr>';
+    document.getElementById('log-count-label').textContent = 'Error';
+}
+
+// ── User Management ──────────────────────────────────────────
+async function loadUsers() {
+    try {
+        const res  = await fetch(API_BASE + '?action=get_users&username=' + encodeURIComponent(currentUser.username));
+        const data = await res.json();
+        if (!res.ok) { console.error('get_users failed:', data.error); return; }
+
+        const users = data.users || [];
+        document.getElementById('user-count-label').textContent = users.length + ' user' + (users.length !== 1 ? 's' : '');
+
+        const tbody = document.getElementById('users-tbody');
+        if (!users.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No users found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => {
+            const isSelf       = u.username === currentUser.username;
+            const isSuperAdmin = u.username === 'paul' || u.username === 'pstamey';
+            const roleLabel    = isSuperAdmin
+                ? '<span class="badge-super">⭐ Super Admin</span>'
+                : u.is_admin
+                    ? '<span class="badge-admin">🛡️ Admin</span>'
+                    : '<span class="badge-user">User</span>';
+            const statusLabel  = u.is_active
+                ? '<span class="badge-active">Active</span>'
+                : '<span class="badge-inactive">Inactive</span>';
+            const lastLogin    = u.last_login ? formatTimestamp(u.last_login) : '<span style="color:#ccc;">Never</span>';
+            const memberSince  = u.created_at ? formatTimestamp(u.created_at) : '—';
+
+            // Admin toggle — disabled for super admin and self
+            let adminCell;
+            if (isSuperAdmin) {
+                adminCell = '<span style="color:#ccc;font-size:12px;">Cannot change</span>';
+            } else {
+                const checked  = u.is_admin ? 'checked' : '';
+                const disabled = isSelf ? 'disabled title="Cannot change your own role"' : '';
+                adminCell = '<label class="toggle-admin">'
+                    + '<input type="checkbox" ' + checked + ' ' + disabled
+                    + ' onchange="setAdmin(\'' + escHtml(u.username) + '\', this.checked, this)">'
+                    + (u.is_admin ? 'Admin' : 'Grant admin')
+                    + '</label>';
+            }
+
+            return '<tr>'
+                + '<td class="td-username">' + escHtml(u.username) + '</td>'
+                + '<td>' + escHtml(u.fullname || '—') + '</td>'
+                + '<td>' + roleLabel + '</td>'
+                + '<td>' + statusLabel + '</td>'
+                + '<td class="td-time">' + lastLogin + '</td>'
+                + '<td class="td-time">' + memberSince + '</td>'
+                + '<td style="text-align:center;">' + adminCell + '</td>'
+                + '</tr>';
+        }).join('');
+
+    } catch(e) {
+        console.error('loadUsers error:', e);
+    }
+}
+
+async function setAdmin(targetUsername, grant, checkboxEl) {
+    const action = grant ? 'grant admin to' : 'revoke admin from';
+    if (!confirm('Are you sure you want to ' + action + ' ' + targetUsername + '?')) {
+        checkboxEl.checked = !grant; // revert
+        return;
+    }
+    checkboxEl.disabled = true;
+    try {
+        const res  = await fetch(API_BASE + '?action=set_admin', {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify({
+                username:        currentUser.username,
+                target_username: targetUsername,
+                grant:           grant,
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            // Refresh the whole users table to show updated role badges
+            loadUsers();
+        } else {
+            alert('Failed: ' + (data.error || 'Unknown error'));
+            checkboxEl.checked = !grant; // revert
+            checkboxEl.disabled = false;
+        }
+    } catch(e) {
+        alert('Network error');
+        checkboxEl.checked = !grant;
+        checkboxEl.disabled = false;
+    }
+}
+</script>
+</body>
+</html>

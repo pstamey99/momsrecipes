@@ -1,0 +1,22 @@
+Options -Indexes
+Options +FollowSymLinks
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Rewrite /momsrecipes/recipes/{uuid} → /momsrecipes/api/recipe.php?id={uuid}
+    # Matches UUIDs like: f2c5cd22-c666-43d3-8c0c-273bec90a6e7
+    # Also matches old .html URLs: f2c5cd22-c666-43d3-8c0c-273bec90a6e7.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^recipes/([a-f0-9\-]+)\.html$ /momsrecipes/api/recipe.php?id=$1 [L,QSA]
+    RewriteRule ^recipes/([a-f0-9\-]+)$       /momsrecipes/api/recipe.php?id=$1 [L,QSA]
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>

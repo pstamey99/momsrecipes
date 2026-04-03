@@ -4,6 +4,21 @@
  * Database and application settings
  */
 
+// ── Email / Notifications ─────────────────────────────────────────────────────
+
+// SMTP settings — Namecheap mail server
+define('SMTP_HOST',     'mail.paulstamey.com');    // Your Namecheap mail server
+define('SMTP_USERNAME', 'noreply@paulstamey.com'); // Email account to send FROM
+define('SMTP_PASSWORD', 'Grahamisnot64!!');    // ← fill this in
+define('SMTP_PORT',     465);
+define('SMTP_SECURE',   'ssl');                    // 'ssl' for port 465
+define('FROM_EMAIL',    'noreply@paulstamey.com');
+define('FROM_NAME',     "Mom's Recipes");
+define('SITE_URL',      'https://paulstamey.com/momsrecipes');
+
+// Cron secret — change this to any random string, use same value in cron job URL
+define('DIGEST_CRON_SECRET', 'mr7Kx9#pQ2$wN4vL');
+
 // Database configuration
 define('DB_PATH', __DIR__ . '/data/recipes.db');
 define('DB_BACKUP_DIR', __DIR__ . '/data/backups');
@@ -58,3 +73,12 @@ if (IS_PRODUCTION) {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
 }
+define('SMTP_HOST',     'smtp.gmail.com');
+define('SMTP_USERNAME', 'paul.stamey@stameyconsulting.com');
+define('SMTP_PASSWORD', 'cpxeuyipdpxbtwyv'); // App Password, no spaces
+define('SMTP_PORT',     587);
+define('SMTP_SECURE',   'tls');
+define('FROM_EMAIL',    'paul.stamey@stameyconsulting.com');
+define('FROM_NAME',     "Mom's Recipes");
+define('SITE_URL',      'https://paulstamey.com/momsrecipes');
+define('DIGEST_CRON_SECRET', 'mr7Kx9#pQ2$wN4vL');

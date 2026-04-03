@@ -102,14 +102,14 @@ class RecipeParser:
                 elif text_lower.startswith(('from:', 'recipe from:', 'source:', 'from ', 'by ')):
                     is_title = False
                 # Skip section headers (Ingredients, Instructions, Notes)
-                elif text_lower in ['ingredients:', 'ingredients', 'instructions:', 'directions:', 
-                                   'preparation:', 'method:', 'notes:', 'notes', 'note:']:
+                elif text_lower in ['ingredients:', 'ingredients', 'instructions:', 'instructions',
+                                   'directions:', 'directions', 'preparation:', 'preparation',
+                                   'method:', 'notes:', 'notes', 'note:']:
                     is_title = False
                 # Skip person names that are clearly not recipes
-                # Pattern: Just a first name, or name with parenthetical last name, or "X's Mother/Father"
-                elif (len(text.split()) == 1 and text[0].isupper() and not text.isupper()) or \
-                     ('(' in text and ')' in text and len(text.split()) <= 3) or \
-                     ("'s mother" in text_lower or "'s father" in text_lower or " - mrs." in text_lower or " - mr." in text_lower):
+                # Pattern: "X's Mother/Father", "- Mrs.", "- Mr." attribution lines
+                elif ("'s mother" in text_lower or "'s father" in text_lower or 
+                      " - mrs." in text_lower or " - mr." in text_lower):
                     is_title = False
                 # Skip image/page references and metadata
                 # Pattern: contains "page", "pictured", "photo", "picture", "cool pictures"
@@ -161,7 +161,8 @@ class RecipeParser:
                     in_instructions = False
                     
                 # Start of instructions section
-                elif text.lower() in ['instructions:', 'directions:', 'preparation:', 'method:']:
+                elif text.lower() in ['instructions:', 'instructions', 'directions:', 'directions',
+                                      'preparation:', 'preparation', 'method:', 'method']:
                     in_ingredients = False
                     in_instructions = True
                     
@@ -763,7 +764,6 @@ class HTMLGenerator:
         self._generate_momsrecipes_css()
         self._generate_momsrecipes_js()
         self._generate_auth_js()  # Add authentication JavaScript
-        self._generate_approved_users_json()  # Approved users list (separate file for easy updates)
         
         print(f"\n✓ Website generated at: {self.output_dir}")
         print(f"  - Main page: {self.output_dir}/index.html")
@@ -1124,6 +1124,241 @@ class HTMLGenerator:
             font-size: 14px;
         }
         
+        /* Import Recipe Button */
+        .import-recipe-btn {
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.88em;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 14px;
+            box-shadow: 0 3px 12px rgba(153,50,204,0.35);
+            transition: all 0.2s;
+            vertical-align: middle;
+        }
+        .import-recipe-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 16px rgba(153,50,204,0.5);
+        }
+
+        /* Import Modal */
+        .import-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9000;
+            overflow-y: auto;
+            padding: 30px 16px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .import-modal-overlay.active { display: flex; }
+
+        .import-modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 680px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        .import-modal-close {
+            position: absolute;
+            top: 14px; right: 18px;
+            background: none; border: none;
+            font-size: 1.4em; cursor: pointer;
+            color: #888; z-index: 10;
+            transition: color 0.2s;
+        }
+        .import-modal-close:hover { color: #333; }
+
+        .import-modal-header {
+            background: linear-gradient(135deg, #ff69b4 0%, #9932cc 100%);
+            color: white;
+            padding: 28px 30px 22px;
+            text-align: center;
+        }
+        .import-modal-icon { font-size: 2.4em; margin-bottom: 6px; }
+        .import-modal-header h2 { margin: 0 0 6px; font-size: 1.5em; }
+        .import-modal-header p  { margin: 0; opacity: 0.88; font-size: 0.88em; }
+
+        .import-step { padding: 24px 28px 28px; }
+
+        .import-drop-zone {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+            margin-bottom: 16px;
+        }
+        .import-drop-zone:hover, .import-drop-zone.dragover {
+            border-color: #ff69b4;
+            background: #fff0f8;
+        }
+        .import-drop-icon { font-size: 2.4em; margin-bottom: 8px; }
+        .import-drop-title { font-weight: 700; color: #333; margin: 0 0 4px; font-size: 1em; }
+        .import-drop-sub   { color: #888; font-size: 0.83em; margin: 0; }
+
+        #import-preview-img {
+            max-height: 200px;
+            max-width: 100%;
+            border-radius: 8px;
+            border: 2px solid #ffb3d9;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+            display: block;
+            margin: 0 auto 10px;
+        }
+        .import-change-btn {
+            display: inline-block;
+            font-size: 0.8em;
+            color: #888;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            padding: 3px 10px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        .import-change-btn:hover { color: #e91e8c; border-color: #e91e8c; }
+
+        #import-extra-prompt {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 0.88em;
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #import-extra-prompt:focus { border-color: #ff69b4; }
+
+        .import-extract-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 13px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(153,50,204,0.3);
+        }
+        .import-extract-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(153,50,204,0.45);
+        }
+        .import-extract-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        .import-status {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            text-align: center;
+        }
+        .import-status.info  { background: #e8f0fe; color: #1a56b0; }
+        .import-status.error { background: #fee; color: #c00; border: 1px solid #fcc; }
+        .import-status.success { background: #e6f9f0; color: #0a6b3a; }
+
+        /* Review step */
+        .import-review-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .import-field-full  { grid-column: 1 / -1; }
+        .import-field-half  { grid-column: span 1; }
+        .import-review-grid label {
+            display: block;
+            font-size: 0.78em;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .import-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: #aaa; }
+        .ir-input, .ir-select, .ir-textarea {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid #eee;
+            border-radius: 7px;
+            padding: 9px 11px;
+            font-family: inherit;
+            font-size: 0.9em;
+            outline: none;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        .ir-input:focus, .ir-select:focus, .ir-textarea:focus { border-color: #ff69b4; }
+        .ir-textarea { resize: vertical; }
+        .ir-custom-btn {
+            display: inline-block;
+            margin-top: 5px;
+            background: none;
+            border: none;
+            padding: 2px 0;
+            font-size: 0.78em;
+            color: #c850c0;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            transition: color 0.15s;
+        }
+        .ir-custom-btn:hover { color: #9932cc; text-decoration: underline; }
+
+        .import-action-row {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .import-back-btn {
+            background: #f0f0f0;
+            color: #555;
+            border: none;
+            padding: 11px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .import-back-btn:hover { background: #e0e0e0; }
+        .import-save-btn {
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 11px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(153,50,204,0.3);
+        }
+        .import-save-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .import-save-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        @media (max-width: 500px) {
+            .import-review-grid { grid-template-columns: 1fr; }
+            .import-field-half  { grid-column: span 1; }
+        }
+
         .user-info {
             position: absolute;
             top: 20px;
@@ -1305,11 +1540,16 @@ class HTMLGenerator:
                     <option value="">All Methods</option>
                 </select>
                 
+                <select id="from-source">
+                    <option value="">All Sources</option>
+                </select>
+                
                 <button id="clear-filters">Clear All</button>
             </div>
             
             <div class="stats">
                 <span id="recipe-count">0 recipes</span>
+                <button id="import-recipe-btn" class="import-recipe-btn" onclick="openImportModal()">📸 Import Recipe</button>
             </div>
         </div>
         
@@ -1351,101 +1591,152 @@ class HTMLGenerator:
         </div>
     </div>
     
+    <!-- Photo Import Modal -->
+    <div id="import-modal" class="import-modal-overlay" onclick="handleImportOverlayClick(event)">
+        <div class="import-modal-content">
+            <button class="import-modal-close" onclick="closeImportModal()">✕</button>
+
+            <!-- Step 1: Upload -->
+            <div id="import-step-upload" class="import-step">
+                <div class="import-modal-header">
+                    <div class="import-modal-icon">📸</div>
+                    <h2>Import Recipe from Photo</h2>
+                    <p>Upload a photo of a handwritten or printed recipe — Claude will read and extract it</p>
+                </div>
+                <div class="import-drop-zone" id="import-drop-zone" onclick="document.getElementById('import-file-input').click()">
+                    <input type="file" id="import-file-input" accept="image/*" style="display:none" onchange="importHandleFile(event)">
+                    <div id="import-drop-content">
+                        <div class="import-drop-icon">🍽️</div>
+                        <p class="import-drop-title">Drop a recipe photo here</p>
+                        <p class="import-drop-sub">or click to browse &nbsp;·&nbsp; JPG, PNG, HEIC, WEBP</p>
+                    </div>
+                    <div id="import-preview-wrap" style="display:none">
+                        <img id="import-preview-img" src="" alt="preview">
+                        <span class="import-change-btn" onclick="event.stopPropagation(); importResetPhoto()">✕ Change photo</span>
+                    </div>
+                </div>
+                <textarea id="import-extra-prompt" placeholder="Optional: extra context e.g. 'This is from Grandma Helen' or 'Focus on the ingredients list'"></textarea>
+                <button id="import-extract-btn" class="import-extract-btn" onclick="importExtract()" disabled>✨ Extract Recipe</button>
+                <div id="import-status" class="import-status" style="display:none"></div>
+            </div>
+
+            <!-- Step 2: Review & Save -->
+            <div id="import-step-review" class="import-step" style="display:none">
+                <div class="import-modal-header">
+                    <h2>✅ Review & Save</h2>
+                    <p>All fields are editable — fix anything before saving</p>
+                </div>
+                <div class="import-review-grid">
+                    <div class="import-field-full">
+                        <label>Title</label>
+                        <input type="text" id="ir-title" class="ir-input">
+                    </div>
+                    <div class="import-field-half">
+                        <label>From (family source)</label>
+                        <input type="text" id="ir-from" class="ir-input" placeholder="e.g. Grandma Helen">
+                    </div>
+                    <div class="import-field-half">
+                        <label>Meal Type</label>
+                        <select id="ir-meal-type" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-meal-type','meal_type')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Cuisine</label>
+                        <select id="ir-cuisine" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-cuisine','cuisine')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Main Ingredient</label>
+                        <select id="ir-ingredient" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-ingredient','main_ingredient')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Method</label>
+                        <select id="ir-method" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-method','method')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Ingredients <span class="import-hint">(one per line)</span></label>
+                        <textarea id="ir-ingredients" class="ir-textarea" rows="8"></textarea>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Directions <span class="import-hint">(one step per line)</span></label>
+                        <textarea id="ir-directions" class="ir-textarea" rows="8"></textarea>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Notes <span class="import-hint">(optional)</span></label>
+                        <textarea id="ir-notes" class="ir-textarea" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="import-action-row">
+                    <button class="import-back-btn" onclick="importGoBack()">← Back</button>
+                    <button id="import-save-btn" class="import-save-btn" onclick="importSave()">💾 Save to Database</button>
+                </div>
+                <div id="import-save-status" class="import-status" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+
     <script src="script.js"></script>
     <script src="auth.js"></script>
     <script>
-    // Blog functionality
-    document.addEventListener('DOMContentLoaded', async function() {
-        const blogPosts = await loadBlogPosts();
-        displayBlogPosts(blogPosts);
-        
-        document.getElementById('post-memory').addEventListener('click', async function() {
-            const content = document.getElementById('blog-content').value.trim();
-            
-            if (!content) {
-                alert('Please write a memory to share');
-                return;
-            }
-            
-            const currentUser = localStorage.getItem('momsrecipes_current_user');
-            if (!currentUser) {
-                alert('You must be logged in to post');
-                return;
-            }
-            
-            // Parse user data and get display name
-            const userData = JSON.parse(currentUser);
-            const displayName = userData.fullname || userData.username;
-            
-            const post = {
-                id: Date.now(),
-                content: content,
-                author: displayName,
-                date: new Date().toISOString(),
-                likes: 0,
-                replies: []
-            };
-            
-            const posts = await loadBlogPosts();
-            posts.unshift(post);
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-            
-            // Clear form
-            document.getElementById('blog-content').value = '';
-        });
-    });
-    
-    function loadBlogPosts() {
+    // ========================================================================
+    // API-backed Blog & Title Changes
+    // ========================================================================
+    const API_URL = 'api/index.php';
+
+    function getCurrentUser() {
+        const s = localStorage.getItem('momsrecipes_current_user');
+        if (!s) return null;
+        try { return JSON.parse(s); } catch(e) { return null; }
+    }
+
+    // ---- Blog: Load from API ----
+    async function loadBlogPosts() {
         try {
-            const stored = localStorage.getItem('momsrecipes_blog_posts');
-            if (!stored) return [];
-            
-            const parsed = JSON.parse(stored);
-            
-            // Ensure it's an array
-            if (Array.isArray(parsed)) {
-                return parsed;
-            } else {
-                console.warn('Blog posts data was not an array, resetting');
-                localStorage.removeItem('momsrecipes_blog_posts');
-                return [];
-            }
-        } catch (e) {
-            console.error('Error loading blog posts:', e);
-            localStorage.removeItem('momsrecipes_blog_posts');
-            return [];
-        }
+            const r = await fetch(API_URL + '?action=get_blog');
+            if (!r.ok) return [];
+            const posts = await r.json();
+            return Array.isArray(posts) ? posts : [];
+        } catch(e) { console.error('Blog load error:', e); return []; }
     }
-    
-    function saveBlogPosts(posts) {
-        localStorage.setItem('momsrecipes_blog_posts', JSON.stringify(posts));
+
+    function normalizePosts(post) {
+        return {
+            ...post,
+            likes:   typeof post.likes   === 'string' ? JSON.parse(post.likes   || '0')  : (post.likes || 0),
+            replies: typeof post.replies === 'string' ? JSON.parse(post.replies || '[]') : (post.replies || [])
+        };
     }
-    
+
+    // ---- Blog: Display ----
     function displayBlogPosts(posts) {
         const container = document.getElementById('blog-posts');
-        
         if (posts.length === 0) {
             container.innerHTML = '<p class="no-posts">No memories shared yet. Be the first!</p>';
             return;
         }
-        
-        container.innerHTML = posts.map(post => {
-            // Handle legacy posts where author might be JSON
-            let authorName = post.author;
-            try {
-                // Try to parse as JSON (old posts)
-                const authorData = JSON.parse(post.author);
-                authorName = authorData.fullname || authorData.username;
-            } catch(e) {
-                // Not JSON, use as-is (new posts)
-                authorName = post.author;
-            }
-            
-            const replyCount = (post.replies && post.replies.length > 0) ? post.replies.length : 0;
-            const replyText = replyCount > 0 ? `(${replyCount})` : '';
-            const deleteButton = isPostAuthor(post.author) ? `<button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>` : '';
-            
+        const me = getCurrentUser();
+        const myName = me ? (me.fullname || me.username) : '';
+
+        container.innerHTML = posts.map(raw => {
+            const post = normalizePosts(raw);
+            let authorName = post.author || 'Anonymous';
+            try { const d = JSON.parse(post.author); authorName = d.fullname || d.username; } catch(e) {}
+
+            const delBtn = (authorName === myName) ? `<button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>` : '';
+            const replyCount = post.replies.length;
+            const replyText  = replyCount > 0 ? `(${replyCount})` : '';
+
             return `
             <div class="blog-post" data-id="${post.id}">
                 <div class="post-meta">
@@ -1454,168 +1745,32 @@ class HTMLGenerator:
                 </div>
                 <p class="post-content">${escapeHtml(post.content)}</p>
                 <div class="post-actions">
-                    <button class="like-btn" onclick="likePost(${post.id})">
-                        ❤️ ${post.likes || 0}
-                    </button>
-                    <button class="reply-btn" onclick="toggleReplyForm(${post.id})">
-                        💬 Reply ${replyText}
-                    </button>
-                    ${deleteButton}
+                    <button class="like-btn" onclick="likePost(${post.id})">❤️ ${post.likes}</button>
+                    <button class="reply-btn" onclick="toggleReplyForm(${post.id})">💬 Reply ${replyText}</button>
+                    ${delBtn}
                 </div>
-                
-                <!-- Reply Form (hidden by default) -->
-                <div class="reply-form" id="reply-form-${post.id}" style="display: none;">
+                <div class="reply-form" id="reply-form-${post.id}" style="display:none;">
                     <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Write a reply..." rows="2" maxlength="300"></textarea>
                     <div class="reply-form-actions">
                         <button class="btn-reply" onclick="submitReply(${post.id})">Post Reply</button>
                         <button class="btn-cancel" onclick="toggleReplyForm(${post.id})">Cancel</button>
                     </div>
                 </div>
-                
-                <!-- Replies List -->
                 <div class="replies-section" id="replies-${post.id}">
-                    ${displayReplies(post.replies || [], post.id)}
+                    ${displayReplies(post.replies, post.id)}
                 </div>
-            </div>
-        `;
+            </div>`;
         }).join('');
     }
-    
-    function isPostAuthor(author) {
-        const currentUser = localStorage.getItem('momsrecipes_current_user');
-        if (!currentUser) return false;
-        
-        // Parse current user to get display name
-        const userData = JSON.parse(currentUser);
-        const displayName = userData.fullname || userData.username;
-        
-        // Check if author matches current user's display name
-        // Also handle old posts that might have JSON stored as author
-        if (author === displayName) return true;
-        if (author === currentUser) return true; // Legacy support
-        
-        return false;
-    }
-    
-    async function likePost(postId) {
-        const posts = await loadBlogPosts();
-        const post = posts.find(p => p.id === postId);
-        if (post) {
-            post.likes = (post.likes || 0) + 1;
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-        }
-    }
-    
-    async function deletePost(postId) {
-        if (!confirm('Delete this memory?')) return;
-        
-        const posts = await loadBlogPosts();
-        const filtered = posts.filter(p => p.id !== postId);
-        await saveBlogPosts(filtered);
-        displayBlogPosts(filtered);
-    }
-    
-    function formatDate(dateStr) {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diff = now - date;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        
-        if (days === 0) return 'Today';
-        if (days === 1) return 'Yesterday';
-        if (days < 7) return `${days} days ago`;
-        return date.toLocaleDateString();
-    }
-    
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    // Reply functions
-    function toggleReplyForm(postId) {
-        const form = document.getElementById(`reply-form-${postId}`);
-        if (form.style.display === 'none') {
-            form.style.display = 'block';
-            document.getElementById(`reply-input-${postId}`).focus();
-        } else {
-            form.style.display = 'none';
-            document.getElementById(`reply-input-${postId}`).value = '';
-        }
-    }
-    
-    async function submitReply(postId) {
-        const currentUser = localStorage.getItem('momsrecipes_current_user');
-        if (!currentUser) {
-            alert('You must be logged in to reply');
-            return;
-        }
-        
-        // Parse user data and get display name
-        const userData = JSON.parse(currentUser);
-        const displayName = userData.fullname || userData.username;
-        
-        const replyInput = document.getElementById(`reply-input-${postId}`);
-        const content = replyInput.value.trim();
-        
-        if (!content) {
-            alert('Please write a reply');
-            return;
-        }
-        
-        const posts = await loadBlogPosts();
-        const post = posts.find(p => p.id === postId);
-        
-        if (post) {
-            if (!post.replies) {
-                post.replies = [];
-            }
-            
-            const reply = {
-                id: Date.now(),
-                content: content,
-                author: displayName,
-                date: new Date().toISOString()
-            };
-            
-            post.replies.push(reply);
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-        }
-    }
-    
-    async function deleteReply(postId, replyId) {
-        if (!confirm('Delete this reply?')) return;
-        
-        const posts = await loadBlogPosts();
-        const post = posts.find(p => p.id === postId);
-        
-        if (post && post.replies) {
-            post.replies = post.replies.filter(r => r.id !== replyId);
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-        }
-    }
-    
+
     function displayReplies(replies, postId) {
-        if (!replies || replies.length === 0) {
-            return '';
-        }
-        
+        if (!replies || replies.length === 0) return '';
+        const me = getCurrentUser();
+        const myName = me ? (me.fullname || me.username) : '';
         return replies.map(reply => {
-            // Handle legacy replies where author might be JSON
-            let authorName = reply.author;
-            try {
-                const authorData = JSON.parse(reply.author);
-                authorName = authorData.fullname || authorData.username;
-            } catch(e) {
-                authorName = reply.author;
-            }
-            
-            const deleteButton = isPostAuthor(reply.author) ? `<button class="delete-reply-btn" onclick="deleteReply(${postId}, ${reply.id})">Delete</button>` : '';
-            
+            let authorName = reply.author || reply.user || 'Anonymous';
+            try { const d = JSON.parse(reply.author); authorName = d.fullname || d.username; } catch(e) {}
+            const delBtn = (authorName === myName) ? `<button class="delete-reply-btn" onclick="deleteReply(${postId}, ${reply.id})">Delete</button>` : '';
             return `
             <div class="reply-item">
                 <div class="reply-meta">
@@ -1623,53 +1778,340 @@ class HTMLGenerator:
                     <span class="reply-date">${formatDate(reply.date)}</span>
                 </div>
                 <p class="reply-content">${escapeHtml(reply.content)}</p>
-                ${deleteButton}
-            </div>
-        `;
+                ${delBtn}
+            </div>`;
         }).join('');
     }
-    
-    // Title Changes functionality
-    function loadTitleChanges() {
-        const stored = localStorage.getItem('momsrecipes_master_title_log');
-        return stored ? JSON.parse(stored) : [];
+
+    // ---- Blog: Actions via API ----
+    async function likePost(postId) {
+        try { 
+            const u = getCurrentUser();
+            await fetch(API_URL + '?action=like_blog&id=' + postId, { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user: u ? (u.fullname || u.username) : 'Anonymous' })
+            }); 
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
     }
-    
-    function displayTitleChanges() {
-        const changes = loadTitleChanges();
+
+    async function deletePost(postId) {
+        if (!confirm('Delete this memory?')) return;
+        try { await fetch(API_URL + '?action=delete_blog&id=' + postId, { method: 'DELETE' }); } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    async function submitReply(postId) {
+        const user = getCurrentUser();
+        if (!user) { alert('You must be logged in to reply'); return; }
+        const content = document.getElementById('reply-input-' + postId).value.trim();
+        if (!content) { alert('Please write a reply'); return; }
+        try {
+            await fetch(API_URL + '?action=reply_blog&id=' + postId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content, author: user.fullname || user.username, date: new Date().toISOString() })
+            });
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    async function deleteReply(postId, replyId) {
+        if (!confirm('Delete this reply?')) return;
+        try {
+            await fetch(API_URL + '?action=delete_reply&id=' + postId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ reply_id: replyId })
+            });
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    function toggleReplyForm(postId) {
+        const form = document.getElementById('reply-form-' + postId);
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ---- Blog: Create post via API ----
+    document.addEventListener('DOMContentLoaded', async function() {
+        displayBlogPosts(await loadBlogPosts());
+
+        document.getElementById('post-memory').addEventListener('click', async function() {
+            const content = document.getElementById('blog-content').value.trim();
+            if (!content) { alert('Please write a memory to share'); return; }
+            const user = getCurrentUser();
+            if (!user) { alert('You must be logged in to post'); return; }
+            try {
+                await fetch(API_URL + '?action=create_blog', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title: '', content, author: user.fullname || user.username, date: new Date().toISOString() })
+                });
+                document.getElementById('blog-content').value = '';
+                displayBlogPosts(await loadBlogPosts());
+            } catch(e) { alert('Error posting memory.'); }
+        });
+    });
+
+    // ---- Title Changes: Load from API ----
+    async function loadTitleChanges() {
+        try {
+            const r = await fetch(API_URL + '?action=get_title_changes');
+            if (!r.ok) return [];
+            return await r.json();
+        } catch(e) { return []; }
+    }
+
+    async function displayTitleChanges() {
+        const changes = await loadTitleChanges();
         const container = document.getElementById('title-changes-log');
-        
         if (!container) return;
-        
         if (changes.length === 0) {
             container.innerHTML = '<div class="no-title-changes">No title changes yet</div>';
             return;
         }
-        
-        container.innerHTML = changes.slice(0, 20).map(change => {
-            const recipeLink = change.recipeUrl ? `<a href="${change.recipeUrl}" class="view-recipe-link">View Recipe →</a>` : '';
-            
+        container.innerHTML = changes.slice(0, 20).map(c => {
+            const from = c.old_title || c.from || '';
+            const to   = c.new_title || c.to   || '';
+            const who  = c.changed_by || c.user || '';
+            const when = c.changed_at || c.timestamp || c.date || '';
             return `
             <div class="title-change-item">
-                <div class="change-time">${change.formatted_time || formatDate(change.date)}</div>
-                <div class="change-user">👤 ${escapeHtml(change.user)}</div>
+                <div class="change-time">${formatDate(when)}</div>
+                <div class="change-user">👤 ${escapeHtml(who)}</div>
                 <div class="change-details">
-                    <span class="old-title">❌ ${escapeHtml(change.from)}</span>
-                    <span class="new-title">✓ ${escapeHtml(change.to)}</span>
+                    <span class="old-title">❌ ${escapeHtml(from)}</span>
+                    <span class="new-title">✓ ${escapeHtml(to)}</span>
                 </div>
-                ${recipeLink}
-            </div>
-        `;
+            </div>`;
         }).join('');
     }
-    
-    // Load title changes on page load
+
     document.addEventListener('DOMContentLoaded', function() {
         displayTitleChanges();
-        
-        // Refresh title changes every 30 seconds to catch updates
         setInterval(displayTitleChanges, 30000);
     });
+
+    // ---- Helpers ----
+    function formatDate(dateStr) {
+        const d = new Date(dateStr); const now = new Date();
+        const days = Math.floor((now - d) / 86400000);
+        if (days === 0) return 'Today'; if (days === 1) return 'Yesterday';
+        if (days < 7) return days + ' days ago'; return d.toLocaleDateString();
+    }
+
+    // ── Photo Import Modal ─────────────────────────────────────────
+    var IMPORT_API_BASE = '/momsrecipes/api/index.php';
+    let importImageBase64 = null;
+    let importImageMediaType = null;
+
+    function openImportModal() {
+        document.getElementById('import-modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+        loadImportMetaSelects();
+    }
+    }
+    function closeImportModal() {
+        document.getElementById('import-modal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // ── Import form: dynamic meta selects with custom option support ──────────
+    var _importMetaLoaded = false;
+    var IMPORT_META_OPTIONS = {
+        meal_type:       ['Breakfast','Lunch','Dinner','Dessert','Snack','Appetizer','Side Dish','Beverage'],
+        cuisine:         ['American','Italian','Mexican','Chinese','Japanese','French','Indian','Thai','Mediterranean','Greek','Spanish','Middle Eastern','Scandinavian','German','Other'],
+        main_ingredient: ['Chicken','Beef','Pork','Fish','Seafood','Vegetables','Pasta','Rice','Beans','Eggs','Cheese','Bread','Fruit','Nuts','Other'],
+        method:          ['Baked','Fried','Grilled','Roasted','Steamed','Boiled','Sautéed','Slow Cooker','Pressure Cooker','No-Bake','Raw','Other']
+    };
+    var _importCustomMeta = {};
+
+    async function loadImportMetaSelects() {
+        // Fetch custom options from API (only once per page load)
+        if (!_importMetaLoaded) {
+            try {
+                var r = await fetch(API_URL + '?action=get_custom_meta');
+                if (r.ok) _importCustomMeta = await r.json();
+            } catch(e) { _importCustomMeta = {}; }
+            _importMetaLoaded = true;
+        }
+        // Populate each select
+        var fields = [
+            ['ir-meal-type',  'meal_type'],
+            ['ir-cuisine',    'cuisine'],
+            ['ir-ingredient', 'main_ingredient'],
+            ['ir-method',     'method']
+        ];
+        fields.forEach(function(pair) {
+            var id = pair[0], type = pair[1];
+            var sel = document.getElementById(id);
+            if (!sel) return;
+            var current = sel.value; // preserve any already-selected value
+            sel.innerHTML = '<option value="">-- select --</option>';
+            var builtIn = IMPORT_META_OPTIONS[type] || [];
+            var custom  = (_importCustomMeta[type] || []);
+            var all = builtIn.concat(custom.filter(function(v){ return !builtIn.includes(v); })).sort();
+            all.forEach(function(opt) {
+                var o = document.createElement('option');
+                o.value = o.textContent = opt;
+                if (opt === current) o.selected = true;
+                sel.appendChild(o);
+            });
+        });
+    }
+
+    function importAddCustom(selectId, type) {
+        var entered = window.prompt('Enter a custom ' + type.replace(/_/g, ' ') + ':');
+        if (!entered || !entered.trim()) return;
+        entered = entered.trim();
+        // Save to API
+        var user = getCurrentUser();
+        fetch(API_URL + '?action=add_custom_meta', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ field_type: type, value: entered, added_by: user ? user.username : 'anonymous' })
+        }).catch(function(){});
+        // Add to local cache
+        if (!_importCustomMeta[type]) _importCustomMeta[type] = [];
+        if (!_importCustomMeta[type].includes(entered)) _importCustomMeta[type].push(entered);
+        // Add to select and select it
+        var sel = document.getElementById(selectId);
+        if (!sel) return;
+        var newOpt = document.createElement('option');
+        newOpt.value = newOpt.textContent = entered;
+        newOpt.selected = true;
+        sel.appendChild(newOpt);
+    }
+    function handleImportOverlayClick(e) {
+        if (e.target === document.getElementById('import-modal')) closeImportModal();
+    }
+    (function() {
+        var dz = document.getElementById('import-drop-zone');
+        if (!dz) return;
+        dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', function() { dz.classList.remove('dragover'); });
+        dz.addEventListener('drop', function(e) {
+            e.preventDefault(); dz.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) importLoadFile(e.dataTransfer.files[0]);
+        });
+    })();
+    function importHandleFile(e) { if (e.target.files[0]) importLoadFile(e.target.files[0]); }
+    function importLoadFile(file) {
+        if (!file.type.startsWith('image/')) { importShowStatus('import-status','Please upload an image file.','error'); return; }
+        importImageMediaType = (file.type === 'image/jpg') ? 'image/jpeg' : file.type;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            importImageBase64 = ev.target.result.split(',')[1];
+            document.getElementById('import-preview-img').src = ev.target.result;
+            document.getElementById('import-drop-content').style.display = 'none';
+            document.getElementById('import-preview-wrap').style.display = 'block';
+            document.getElementById('import-extract-btn').disabled = false;
+            importHideStatus('import-status');
+        };
+        reader.readAsDataURL(file);
+    }
+    function importResetPhoto() {
+        importImageBase64 = null; importImageMediaType = null;
+        document.getElementById('import-file-input').value = '';
+        document.getElementById('import-drop-content').style.display = 'block';
+        document.getElementById('import-preview-wrap').style.display = 'none';
+        document.getElementById('import-extract-btn').disabled = true;
+    }
+    function importGoBack() {
+        document.getElementById('import-step-review').style.display = 'none';
+        document.getElementById('import-step-upload').style.display = 'block';
+    }
+    async function importExtract() {
+        if (!importImageBase64) return;
+        var extra = document.getElementById('import-extra-prompt').value.trim();
+        var btn = document.getElementById('import-extract-btn');
+        btn.disabled = true; btn.textContent = '\u23f3 Extracting\u2026';
+        importShowStatus('import-status','Sending to Claude \u2014 this may take 10\u201320 seconds\u2026','info');
+        try {
+            var r = await fetch(IMPORT_API_BASE + '?action=import_recipe', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    image_base64: importImageBase64,
+                    image_media_type: importImageMediaType,
+                    extra_prompt: extra
+                })
+            });
+            if (!r.ok) { var er=await r.json().catch(function(){return{};}); throw new Error(er.error||'API error '+r.status); }
+            var data = await r.json();
+            var recipe = data.recipe;
+            if (!recipe) throw new Error('No recipe returned from server');
+            importPopulateReview(recipe);
+            document.getElementById('import-step-upload').style.display = 'none';
+            document.getElementById('import-step-review').style.display = 'block';
+            importHideStatus('import-status');
+        } catch(err) { importShowStatus('import-status','Error: '+err.message,'error'); }
+        finally { btn.disabled=false; btn.textContent='\u2728 Extract Recipe'; }
+    }
+    function importPopulateReview(recipe) {
+        document.getElementById('ir-title').value       = recipe.title||'';
+        document.getElementById('ir-from').value        = recipe.family_source||'';
+        document.getElementById('ir-ingredients').value = (recipe.ingredients||[]).join('\\n');
+        document.getElementById('ir-directions').value  = (recipe.directions||[]).join('\\n');
+        document.getElementById('ir-notes').value       = recipe.notes||'';
+        [['ir-meal-type','meal_type'],['ir-cuisine','cuisine'],['ir-ingredient','main_ingredient'],['ir-method','method']].forEach(function(p) {
+            var val = recipe[p[1]] || '';
+            var el  = document.getElementById(p[0]);
+            if (!val) return;
+            // Try to find a matching option (case-insensitive)
+            var opt = Array.from(el.options).find(function(o){ return o.value.toLowerCase() === val.toLowerCase(); });
+            if (opt) {
+                el.value = opt.value;
+            } else {
+                // AI returned a value not yet in the list — add it
+                var newOpt = document.createElement('option');
+                newOpt.value = newOpt.textContent = val;
+                newOpt.selected = true;
+                el.appendChild(newOpt);
+            }
+        });
+    }
+    async function importSave() {
+        var title = document.getElementById('ir-title').value.trim();
+        if (!title) { importShowStatus('import-save-status','Please enter a recipe title.','error'); return; }
+        var btn = document.getElementById('import-save-btn');
+        btn.disabled=true; btn.textContent='\u23f3 Saving\u2026';
+        importShowStatus('import-save-status','Saving to database\u2026','info');
+        var ing = document.getElementById('ir-ingredients').value.split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+        var dir = document.getElementById('ir-directions').value.split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+        var u = getCurrentUser();
+        var payload = {
+            title:title, family_source:document.getElementById('ir-from').value.trim(),
+            meal_type:document.getElementById('ir-meal-type').value, cuisine:document.getElementById('ir-cuisine').value,
+            main_ingredient:document.getElementById('ir-ingredient').value, method:document.getElementById('ir-method').value,
+            ingredients:ing, directions:dir, notes:document.getElementById('ir-notes').value.trim(),
+            uuid:(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)),
+            contributor:u?(u.username||'anonymous'):'anonymous',
+            image_data:importImageBase64||'', image_filename:importImageBase64?'imported_recipe.jpg':''
+        };
+        try {
+            var r = await fetch(API_URL+'?action=create_recipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+            if (!r.ok) { var er=await r.json().catch(function(){return{};}); throw new Error(er.error||'Save failed ('+r.status+')'); }
+            var saved=await r.json(), newId=(saved.recipe&&saved.recipe.id)||saved.id||payload.uuid;
+            var rec=Object.assign({},payload,{id:newId,url:'recipes/'+payload.uuid+'.html'});
+            allRecipes.unshift(rec); filteredRecipes=allRecipes.slice(); populateFilters(); displayRecipes();
+            importShowStatus('import-save-status','\u2705 Recipe saved!','success');
+            btn.textContent='\u2705 Saved!';
+            setTimeout(function(){
+                closeImportModal(); importResetPhoto();
+                document.getElementById('import-step-review').style.display='none';
+                document.getElementById('import-step-upload').style.display='block';
+                document.getElementById('import-extra-prompt').value='';
+                btn.textContent='\U0001f4be Save to Database'; btn.disabled=false;
+                importHideStatus('import-save-status');
+            },2200);
+        } catch(err) { importShowStatus('import-save-status','Error: '+err.message,'error'); btn.disabled=false; btn.textContent='\U0001f4be Save to Database'; }
+    }
+    function importShowStatus(id,msg,type){var el=document.getElementById(id);if(!el)return;el.textContent=msg;el.className='import-status '+type;el.style.display='block';}
+    function importHideStatus(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
     </script>
 </body>
 </html>'''
@@ -1678,19 +2120,26 @@ class HTMLGenerator:
             f.write(html_content)
     
     def _generate_recipe_pages(self, recipes):
-        """Generate individual recipe pages using UUID as filename (supports title changes)"""
+        """Generate individual recipe pages"""
+        # Collect all unique family_source values across all recipes
+        all_sources = sorted(set(
+            r['family_source'] for r in recipes
+            if r.get('family_source') and r['family_source'].strip()
+        ))
         for recipe in recipes:
-            # Use UUID for filename so title renames don't break links
+            # Use full UUID as filename — permanently stable even if title changes
             recipe_uuid = recipe.get('uuid', '')
             if recipe_uuid:
                 filename = recipe_uuid + '.html'
             else:
-                # Fallback for recipes without UUID
+                # Fallback only for recipes with no UUID (should not happen)
                 filename = self._sanitize_filename(recipe['title']) + '.html'
-            self._generate_recipe_page(recipe, filename)
+            self._generate_recipe_page(recipe, filename, all_sources)
     
-    def _generate_recipe_page(self, recipe, filename):
+    def _generate_recipe_page(self, recipe, filename, all_sources=None):
         """Generate a single recipe page with edit capabilities"""
+        if all_sources is None:
+            all_sources = []
         # Use UUID as permanent recipe ID (stable even if title changes)
         recipe_id = recipe.get('uuid', self._sanitize_filename(recipe['title']))
         
@@ -1770,17 +2219,17 @@ class HTMLGenerator:
         
         meta_html = ''.join(meta_fields)
         
-        # Build source attribution - make it editable
+        # Build source attribution - dropdown like meta tags
         source_html = ''
         if recipe.get('family_source'):
             source_html = f'''<div class="source-field">
                 <label class="source-label">From:</label>
-                <span id="family-source" class="source editable-source" contenteditable="false" title="Click to edit source">{html.escape(recipe["family_source"])}</span>
+                <span id="family-source" class="source editable-meta editable-source" data-type="family_source" title="Click to edit source">{html.escape(recipe["family_source"])}</span>
             </div>'''
         else:
             source_html = f'''<div class="source-field">
                 <label class="source-label">From:</label>
-                <span id="family-source" class="source editable-source empty" contenteditable="false" title="Click to add source">+ Add Source</span>
+                <span id="family-source" class="source editable-meta editable-source empty" data-type="family_source" title="Click to add source">+ Add Source</span>
             </div>'''
         
         # Build notes
@@ -2481,6 +2930,19 @@ class HTMLGenerator:
             <a href="../" class="back-link">← Back to Search</a>
             <h1 id="recipe-title" class="editable-title" contenteditable="false" title="Click to edit title">{html.escape(recipe["title"])}</h1>
             {source_html}
+
+            <!-- Favorites & Reactions -->
+            <div class="social-bar" id="social-bar">
+                <button class="fav-btn-page" id="fav-btn-page" onclick="toggleFavoritePage()" title="Add to favorites">♡ Favorite</button>
+                <div class="reactions-panel">
+                    <span class="reactions-label">React:</span>
+                    <button class="react-btn" data-emoji="❤️" onclick="toggleReactionPage('❤️')" title="Love it">❤️</button>
+                    <button class="react-btn" data-emoji="😋" onclick="toggleReactionPage('😋')" title="Delicious">😋</button>
+                    <button class="react-btn" data-emoji="⭐" onclick="toggleReactionPage('⭐')" title="Family favorite">⭐</button>
+                    <button class="react-btn" data-emoji="👍" onclick="toggleReactionPage('👍')" title="Great recipe">👍</button>
+                </div>
+                <div class="reaction-counts" id="reaction-counts"></div>
+            </div>
             
             <div class="meta-section">
                 <h3 class="meta-section-title">Recipe Details</h3>
@@ -2564,22 +3026,128 @@ class HTMLGenerator:
             currentRecipe.uuid = RECIPE_ID;
         }}
         
-        // Load any saved edits from localStorage
-        function loadSavedRecipe() {{
-            // Try new UUID-based key first
-            let saved = localStorage.getItem('momsrecipes_recipe_' + RECIPE_ID);
-            
-            // Fall back to old title-based key for backward compatibility
-            if (!saved) {{
-                saved = localStorage.getItem('recipe_' + RECIPE_ID);
-            }}
-            
-            if (saved) {{
-                currentRecipe = JSON.parse(saved);
-                applyRecipeData(currentRecipe);
+        const API_URL = '../api/index.php';
+
+        function getCurrentUser() {{
+            const s = localStorage.getItem('momsrecipes_current_user');
+            if (!s) return null;
+            try {{ return JSON.parse(s); }} catch(e) {{ return null; }}
+        }}
+
+        // ── Favorites & Reactions ──────────────────────────────────────────
+        let _myReactions = new Set();
+
+        async function loadSocialState() {{
+            const user = getCurrentUser();
+            if (!user) return;
+            try {{
+                const resp = await fetch(API_URL + '?action=get_reactions&recipe_uuid=' + encodeURIComponent(RECIPE_ID) + '&username=' + encodeURIComponent(user.username));
+                if (!resp.ok) return;
+                const data = await resp.json();
+                // Reaction counts
+                renderReactionCounts(data.counts || {{}});
+                // My reactions
+                _myReactions = new Set(data.mine || []);
+                document.querySelectorAll('.react-btn').forEach(btn => {{
+                    if (_myReactions.has(btn.dataset.emoji)) btn.classList.add('reacted');
+                }});
+                // Favorite state
+                const favResp = await fetch(API_URL + '?action=get_favorites&username=' + encodeURIComponent(user.username));
+                if (favResp.ok) {{
+                    const favData = await favResp.json();
+                    const isFav = (favData.favorites || []).includes(RECIPE_ID);
+                    const btn = document.getElementById('fav-btn-page');
+                    if (btn) {{
+                        btn.textContent = isFav ? '♥ Favorited' : '♡ Favorite';
+                        btn.classList.toggle('favorited', isFav);
+                    }}
+                }}
+            }} catch(e) {{ console.warn('loadSocialState error:', e); }}
+        }}
+
+        function renderReactionCounts(counts) {{
+            const el = document.getElementById('reaction-counts');
+            if (!el) return;
+            el.innerHTML = '';
+            ['❤️','😋','⭐','👍'].forEach(emoji => {{
+                const c = counts[emoji] || 0;
+                if (c > 0) {{
+                    const chip = document.createElement('span');
+                    chip.className = 'rc-chip';
+                    chip.textContent = emoji + ' ' + c;
+                    el.appendChild(chip);
+                }}
+            }});
+        }}
+
+        async function toggleFavoritePage() {{
+            const user = getCurrentUser();
+            if (!user) {{ alert('Please log in to save favorites.'); return; }}
+            try {{
+                const resp = await fetch(API_URL + '?action=toggle_favorite', {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{ username: user.username, recipe_uuid: RECIPE_ID }})
+                }});
+                const data = await resp.json();
+                const btn = document.getElementById('fav-btn-page');
+                if (btn) {{
+                    btn.textContent = data.favorited ? '♥ Favorited' : '♡ Favorite';
+                    btn.classList.toggle('favorited', data.favorited);
+                }}
+            }} catch(e) {{ console.error('toggleFavoritePage error:', e); }}
+        }}
+
+        async function toggleReactionPage(emoji) {{
+            const user = getCurrentUser();
+            if (!user) {{ alert('Please log in to react.'); return; }}
+            try {{
+                const resp = await fetch(API_URL + '?action=toggle_reaction', {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{ username: user.username, recipe_uuid: RECIPE_ID, reaction: emoji }})
+                }});
+                const data = await resp.json();
+                const btn = document.querySelector('.react-btn[data-emoji="' + emoji + '"]');
+                if (btn) btn.classList.toggle('reacted', data.reacted);
+                renderReactionCounts(data.counts || {{}});
+            }} catch(e) {{ console.error('toggleReactionPage error:', e); }}
+        }}
+        // ── End Social ─────────────────────────────────────────────────────
+
+
+        async function loadSavedRecipe() {{
+            try {{
+                const r = await fetch(API_URL + '?action=get_recipe&id=' + RECIPE_ID);
+                if (r.ok) {{
+                    const saved = await r.json();
+                    if (saved && saved.title) {{
+                        saved.ingredients = normalizeList(saved.ingredients);
+                        saved.directions  = normalizeList(saved.directions);
+                        saved.notes       = normalizeList(saved.notes);
+                        currentRecipe = saved;
+                        applyRecipeData(currentRecipe);
+                    }}
+                }}
+            }} catch(e) {{
+                console.log('No saved recipe from API, using static version');
             }}
         }}
         
+        // Always returns a flat array of non-empty strings.
+        // Handles: proper array, newline-joined string, nested arrays, null/undefined.
+        function normalizeList(val) {{
+            if (!val) return [];
+            if (typeof val === 'string') {{
+                return val.split('\\n').map(s => s.trim()).filter(Boolean);
+            }}
+            if (Array.isArray(val)) {{
+                return val.flatMap(item => normalizeList(item)).filter(Boolean);
+            }}
+            const s = String(val).trim();
+            return s ? [s] : [];
+        }}
+
         // Apply recipe data to the page
         function applyRecipeData(recipe) {{
             // Update title
@@ -2685,37 +3253,22 @@ class HTMLGenerator:
         }}
 
         
-        // Save recipe to localStorage
-        function saveRecipe(recipe) {{
+        // Save recipe to backend API
+        async function saveRecipe(recipe) {{
             try {{
-                // Update currentRecipe
                 currentRecipe = recipe;
-                
-                // Save to localStorage with recipe ID
-                localStorage.setItem('momsrecipes_recipe_' + RECIPE_ID, JSON.stringify(recipe));
-                
-                // Also save with old format for compatibility
-                localStorage.setItem('recipe_' + RECIPE_ID, JSON.stringify(recipe));
-                
-                // Update last modified timestamp
-                const timestamp = new Date().toISOString();
-                const currentUser = localStorage.getItem('momsrecipes_current_user');
-                let userData = null;
-                if (currentUser) {{
-                    try {{
-                        userData = JSON.parse(currentUser);
-                    }} catch(e) {{
-                        userData = {{ username: currentUser }};
-                    }}
-                }}
-                
-                recipe.lastModified = timestamp;
-                recipe.lastModifiedBy = userData ? userData.username : 'anonymous';
-                
-                // Apply changes to page immediately
+                const user = getCurrentUser();
+                recipe.lastModified = new Date().toISOString();
+                recipe.lastModifiedBy = user ? user.username : 'anonymous';
+
+                await fetch(API_URL + '?action=save_recipe&id=' + RECIPE_ID, {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify(recipe)
+                }});
+
                 applyRecipeData(recipe);
-                
-                console.log('Recipe saved:', RECIPE_ID);
+                console.log('Recipe saved to API:', RECIPE_ID);
                 return true;
             }} catch (error) {{
                 console.error('Error saving recipe:', error);
@@ -2724,45 +3277,35 @@ class HTMLGenerator:
             }}
         }}
         
-        // Log edit to history
-        function logEdit(changes, changeDetails) {{
-            const history = JSON.parse(localStorage.getItem('recipe_history_' + RECIPE_ID) || '[]');
+        // Log edit to backend API
+        async function logEdit(changes, changeDetails) {{
             const now = new Date();
-            
-            // Get current logged-in user
-            const currentUser = localStorage.getItem('momsrecipes_current_user');
-            let username = 'User';
-            if (currentUser) {{
-                const user = JSON.parse(currentUser);
-                username = user.fullname || user.username;
-            }}
-            
-            history.unshift({{
-                timestamp: now.toISOString(),
-                formatted_time: now.toLocaleString('en-US', {{ 
-                    month: 'long', 
-                    day: 'numeric', 
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                }}),
-                changes: changes,
-                changeDetails: changeDetails || [],
-                user: username
-            }});
-            
-            // Keep last 50 edits
-            if (history.length > 50) {{
-                history.length = 50;
-            }}
-            
-            localStorage.setItem('recipe_history_' + RECIPE_ID, JSON.stringify(history));
+            const user = getCurrentUser();
+            const username = user ? (user.fullname || user.username) : 'User';
+
+            try {{
+                await fetch(API_URL + '?action=add_history&id=' + RECIPE_ID, {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{
+                        timestamp: now.toISOString(),
+                        formatted_time: now.toLocaleString('en-US', {{ month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }}),
+                        changes: changes,
+                        changeDetails: changeDetails || [],
+                        user: username
+                    }})
+                }});
+            }} catch(e) {{ console.error('Error logging edit:', e); }}
         }}
         
-        // Show edit history
-        function showEditHistory() {{
-            const history = JSON.parse(localStorage.getItem('recipe_history_' + RECIPE_ID) || '[]');
+        // Show edit history from backend API
+        async function showEditHistory() {{
+            let history = [];
+            try {{
+                const r = await fetch(API_URL + '?action=get_history&id=' + RECIPE_ID);
+                if (r.ok) history = await r.json();
+            }} catch(e) {{ console.error('Error loading history:', e); }}
+
             const logEl = document.getElementById('edit-log');
             
             if (history.length === 0) {{
@@ -3117,7 +3660,7 @@ class HTMLGenerator:
             }});
             
             // Save on blur
-            titleElement.addEventListener('blur', function() {{
+            titleElement.addEventListener('blur', async function() {{
                 const newTitle = titleElement.textContent.trim();
                 
                 // Revert if empty
@@ -3133,55 +3676,27 @@ class HTMLGenerator:
                     return;
                 }}
                 
-                // Title changed - save it and rename files
+                // Title changed - save to API
                 const oldTitle = originalTitle;
-                const currentUser = localStorage.getItem('momsrecipes_current_user');
-                let userData = currentUser ? JSON.parse(currentUser) : null;
-                const username = userData ? (userData.fullname || userData.username) : 'Anonymous';
-                
-                const changelog = {{
-                    from: oldTitle,
-                    to: newTitle,
-                    date: new Date().toISOString(),
-                    user: username,
-                    recipeUUID: currentRecipe.uuid || RECIPE_ID,
-                    recipeName: oldTitle
-                }};
-                
-                // Save to recipe-specific changelog using UUID
-                const allChanges = JSON.parse(localStorage.getItem('momsrecipes_title_changelog') || '{{}}');
-                const recipeUUID = currentRecipe.uuid || RECIPE_ID;
-                if (!allChanges[recipeUUID]) allChanges[recipeUUID] = [];
-                allChanges[recipeUUID].push(changelog);
-                localStorage.setItem('momsrecipes_title_changelog', JSON.stringify(allChanges));
-                
-                // Save to MASTER title changelog
-                const masterLog = JSON.parse(localStorage.getItem('momsrecipes_master_title_log') || '[]');
-                masterLog.unshift({{
-                    from: oldTitle,
-                    to: newTitle,
-                    date: new Date().toISOString(),
-                    formatted_time: new Date().toLocaleString('en-US', {{ 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                    }}),
-                    user: username,
-                    recipeUUID: recipeUUID,
-                    recipeUrl: window.location.pathname,
-                    oldFilename: currentRecipe.filename || window.location.pathname.split('/').pop(),
-                    newFilename: null  // Will be set after rename
-                }});
-                
-                if (masterLog.length > 100) {{
-                    masterLog.length = 100;
-                }}
-                localStorage.setItem('momsrecipes_master_title_log', JSON.stringify(masterLog));
-                
-                // Log to individual recipe edit history
+                const user = getCurrentUser();
+                const username = user ? (user.fullname || user.username) : 'Anonymous';
+
+                // Log title change to backend API
+                try {{
+                    await fetch(API_URL + '?action=add_title_change', {{
+                        method: 'POST',
+                        headers: {{'Content-Type': 'application/json'}},
+                        body: JSON.stringify({{
+                            recipe_uuid: currentRecipe.uuid || RECIPE_ID,
+                            old_title: oldTitle,
+                            new_title: newTitle,
+                            changed_by: username,
+                            timestamp: new Date().toISOString()
+                        }})
+                    }});
+                }} catch(e) {{ console.error('Error logging title change:', e); }}
+
+                // Log to recipe edit history
                 logEdit(
                     ['Edited title'],
                     [createChangeDetail(
@@ -3200,23 +3715,8 @@ class HTMLGenerator:
                 // Disable editing
                 titleElement.setAttribute('contenteditable', 'false');
                 
-                // Create redirect from old filename to new filename
-                createRedirectForRename(oldTitle, newTitle);
-                
-                showToast('Title updated! Files will be renamed on next site generation.', 'success');
+                showToast('Title updated!', 'success');
             }});
-        }}
-        
-        // Create redirect entry for renamed recipe
-        function createRedirectForRename(oldTitle, newTitle) {{
-            const redirects = JSON.parse(localStorage.getItem('momsrecipes_redirects') || '{{}}');
-            const oldSlug = slugify(oldTitle);
-            const newSlug = slugify(newTitle);
-            
-            if (oldSlug !== newSlug) {{
-                redirects[oldSlug] = newSlug;
-                localStorage.setItem('momsrecipes_redirects', JSON.stringify(redirects));
-            }}
         }}
         
         // Slugify function for creating URL-safe filenames
@@ -3232,9 +3732,9 @@ class HTMLGenerator:
                 .replace(/-+$/, '');
         }}
         
-        // Family Source Editing
-        const sourceElement = document.getElementById('family-source');
-        if (sourceElement) {{
+        // Family Source — handled by initMetaTagEditing via editable-meta / data-type="family_source"
+        // (Legacy contenteditable handler removed)
+        if (false) {{ // placeholder to keep brace structure intact
             sourceElement.addEventListener('click', function() {{
                 if (this.getAttribute('contenteditable') === 'false') {{
                     const oldSource = this.textContent.trim();
@@ -3311,7 +3811,11 @@ class HTMLGenerator:
         }}
         
         // Meta Tag Editing
+        // All known "From" sources across every recipe (injected at build time)
+        const ALL_KNOWN_SOURCES = {json.dumps(all_sources)};
+        
         const META_OPTIONS = {{
+            family_source: ALL_KNOWN_SOURCES,
             meal_type: [
                 'Breakfast',
                 'Lunch',
@@ -3372,30 +3876,39 @@ class HTMLGenerator:
             ]
         }};
         
-        // Load custom meta options from localStorage
-        function getCustomMetaOptions(type) {{
-            const customOptions = JSON.parse(localStorage.getItem('momsrecipes_custom_meta_options') || '{{}}');
-            return customOptions[type] || [];
+        // Custom meta options — loaded from API, cached in memory for this session
+        let _cachedCustomMeta = null;
+
+        async function loadCustomMetaOptions() {{
+            if (_cachedCustomMeta) return _cachedCustomMeta;
+            try {{
+                const r = await fetch(API_URL + '?action=get_custom_meta');
+                if (r.ok) _cachedCustomMeta = await r.json();
+                else _cachedCustomMeta = {{}};
+            }} catch(e) {{ _cachedCustomMeta = {{}}; }}
+            return _cachedCustomMeta;
         }}
-        
-        // Save custom meta option
-        function saveCustomMetaOption(type, value) {{
-            const customOptions = JSON.parse(localStorage.getItem('momsrecipes_custom_meta_options') || '{{}}');
-            if (!customOptions[type]) {{
-                customOptions[type] = [];
-            }}
-            
-            // Add if not already present
-            if (!customOptions[type].includes(value) && !META_OPTIONS[type].includes(value)) {{
-                customOptions[type].push(value);
-                customOptions[type].sort(); // Keep alphabetically sorted
-                localStorage.setItem('momsrecipes_custom_meta_options', JSON.stringify(customOptions));
-                
-                // Trigger custom event to update filters on main page
-                window.dispatchEvent(new CustomEvent('customMetaOptionAdded', {{ 
-                    detail: {{ type, value }}
-                }}));
-            }}
+
+        function getCustomMetaOptions(type) {{
+            return (_cachedCustomMeta && _cachedCustomMeta[type]) ? _cachedCustomMeta[type] : [];
+        }}
+
+        async function saveCustomMetaOption(type, value) {{
+            if (!type || !value) return;
+            try {{
+                const user = getCurrentUser();
+                await fetch(API_URL + '?action=add_custom_meta', {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{ field_type: type, value: value, added_by: user ? user.username : 'anonymous' }})
+                }});
+                if (!_cachedCustomMeta) _cachedCustomMeta = {{}};
+                if (!_cachedCustomMeta[type]) _cachedCustomMeta[type] = [];
+                if (!_cachedCustomMeta[type].includes(value)) {{
+                    _cachedCustomMeta[type].push(value);
+                    _cachedCustomMeta[type].sort();
+                }}
+            }} catch(e) {{ console.warn('Could not save custom meta option', e); }}
         }}
         
         // Get all options (built-in + custom) for a type
@@ -3415,29 +3928,23 @@ class HTMLGenerator:
                     const type = this.dataset.type;
                     const currentValue = this.classList.contains('empty') ? '' : this.textContent.trim();
                     
-                    // Create dropdown
                     const select = document.createElement('select');
                     select.className = 'meta-select';
                     
-                    // Add empty option
                     const emptyOption = document.createElement('option');
                     emptyOption.value = '';
-                    emptyOption.textContent = '-- Select --';
+                    emptyOption.textContent = currentValue ? '— Clear —' : '— Select —';
                     select.appendChild(emptyOption);
                     
-                    // Add all options (built-in + custom)
                     const allOptions = getAllMetaOptions(type);
                     allOptions.forEach(option => {{
                         const opt = document.createElement('option');
                         opt.value = option;
                         opt.textContent = option;
-                        if (option === currentValue) {{
-                            opt.selected = true;
-                        }}
+                        if (option === currentValue) opt.selected = true;
                         select.appendChild(opt);
                     }});
                     
-                    // Add "Add Custom..." option at the end
                     const customOption = document.createElement('option');
                     customOption.value = '__custom__';
                     customOption.textContent = '➕ Add Custom...';
@@ -3445,7 +3952,7 @@ class HTMLGenerator:
                     customOption.style.color = '#ff69b4';
                     select.appendChild(customOption);
                     
-                    // Replace tag with select
+                    // Current value already visible — replace tag with select
                     this.replaceWith(select);
                     select.focus();
                     
@@ -3544,7 +4051,7 @@ class HTMLGenerator:
             saveRecipe(currentRecipe);
             
             // Log edit
-            const displayType = type.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
+            const displayType = type === 'family_source' ? 'Source (From)' : type.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
             logEdit(
                 [`Edited ${{displayType}}`],
                 [createChangeDetail(
@@ -3560,17 +4067,21 @@ class HTMLGenerator:
             const newTag = document.createElement('span');
             const cssClass = type.replace(/_/g, '-');
             newTag.className = `meta-tag ${{cssClass}} editable-meta`;
+            if (type === 'family_source') {{
+                newTag.className = `source editable-meta editable-source`;
+                newTag.id = 'family-source';
+            }}
             newTag.dataset.type = type;
             newTag.title = 'Click to edit';
             
             if (value) {{
                 newTag.textContent = value;
-                // Add subtle border to show it has a value
+                newTag.classList.remove('empty');
                 newTag.style.border = '2px solid rgba(255, 255, 255, 0.6)';
                 newTag.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
             }} else {{
                 newTag.classList.add('empty');
-                newTag.textContent = `+ ${{displayType}}`;
+                newTag.textContent = type === 'family_source' ? '+ Add Source' : `+ ${{displayType}}`;
             }}
             
             // Replace select with new tag
@@ -3584,18 +4095,22 @@ class HTMLGenerator:
         
         function restoreMetaTag(type, value, selectElement) {{
             const tag = document.createElement('span');
-            const cssClass = type.replace(/_/g, '-');
-            tag.className = `meta-tag ${{cssClass}} editable-meta`;
+            if (type === 'family_source') {{
+                tag.className = `source editable-meta editable-source`;
+                tag.id = 'family-source';
+            }} else {{
+                const cssClass = type.replace(/_/g, '-');
+                tag.className = `meta-tag ${{cssClass}} editable-meta`;
+            }}
             tag.dataset.type = type;
             tag.title = 'Click to edit';
             
             if (value) {{
                 tag.textContent = value;
-                // Add subtle border to show it has a value
                 tag.style.border = '2px solid rgba(255, 255, 255, 0.6)';
                 tag.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
             }} else {{
-                const displayType = type.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
+                const displayType = type === 'family_source' ? 'Add Source' : type.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
                 tag.classList.add('empty');
                 tag.textContent = `+ ${{displayType}}`;
             }}
@@ -3628,7 +4143,7 @@ class HTMLGenerator:
         function displayIngredients(ingredients) {{
             const list = document.getElementById('ingredients-list');
             if (!list) return;
-            
+            ingredients = normalizeList(ingredients);
             list.innerHTML = ingredients.map((ing, index) => `
                 <li class="ingredient-item" data-index="${{index}}" draggable="true">
                     <span class="drag-handle">☰</span>
@@ -3907,7 +4422,7 @@ class HTMLGenerator:
         function displayDirections(directions) {{
             const list = document.getElementById('directions-list');
             if (!list) return;
-            
+            directions = normalizeList(directions);
             list.innerHTML = directions.map((dir, index) => `
                 <li class="direction-item" data-index="${{index}}" draggable="true">
                     <span class="drag-handle">☰</span>
@@ -4139,69 +4654,78 @@ class HTMLGenerator:
             const listId = type === 'ingredients' ? 'ingredients-list' : 'directions-list';
             const list = document.getElementById(listId);
             if (!list) return;
-            
-            const items = list.querySelectorAll('li');
+
+            // Strip old listeners by replacing with a clone
+            const fresh = list.cloneNode(true);
+            list.parentNode.replaceChild(fresh, list);
+            const newList = document.getElementById(listId);
+
             let draggedItem = null;
-            
-            items.forEach(item => {{
-                item.addEventListener('dragstart', function(e) {{
-                    draggedItem = this;
-                    this.classList.add('dragging');
+
+            newList.addEventListener('dragstart', function(e) {{
+                const li = e.target.closest('li');
+                if (!li) return;
+                draggedItem = li;
+                li.classList.add('dragging');
+            }});
+
+            newList.addEventListener('dragend', function(e) {{
+                const li = e.target.closest('li');
+                if (li) li.classList.remove('dragging');
+                draggedItem = null;
+            }});
+
+            newList.addEventListener('dragover', function(e) {{
+                e.preventDefault();
+                if (!draggedItem) return;
+                const afterElement = getDragAfterElement(newList, e.clientY);
+                if (afterElement === null) {{
+                    newList.appendChild(draggedItem);
+                }} else {{
+                    newList.insertBefore(draggedItem, afterElement);
+                }}
+            }});
+
+            newList.addEventListener('drop', function(e) {{
+                e.preventDefault();
+                if (!draggedItem) return;
+
+                const oldOrder = type === 'ingredients'
+                    ? [...currentRecipe.ingredients]
+                    : [...currentRecipe.directions];
+
+                const newOrder = Array.from(newList.querySelectorAll('li')).map(li => {{
+                    const textEl = li.querySelector('.ingredient-text, .direction-text');
+                    return textEl ? textEl.textContent.trim() : li.textContent.trim();
                 }});
-                
-                item.addEventListener('dragend', function(e) {{
-                    this.classList.remove('dragging');
-                }});
-                
-                item.addEventListener('dragover', function(e) {{
-                    e.preventDefault();
-                    if (this === draggedItem) return;
-                    const afterElement = getDragAfterElement(list, e.clientY);
-                    if (afterElement == null) {{
-                        list.appendChild(draggedItem);
-                    }} else {{
-                        list.insertBefore(draggedItem, afterElement);
-                    }}
-                }});
-                
-                item.addEventListener('drop', function(e) {{
-                    e.preventDefault();
-                    const items = Array.from(list.children);
-                    const oldOrder = type === 'ingredients' ? [...currentRecipe.ingredients] : [...currentRecipe.directions];
-                    const newOrder = items.map(item => {{
-                        const index = parseInt(item.dataset.index);
-                        return type === 'ingredients' ? currentRecipe.ingredients[index] : currentRecipe.directions[index];
-                    }});
-                    
-                    // Log the change with proper format
-                    const changeType = type === 'ingredients' ? 'ingredient' : 'direction';
-                    logEdit(
-                        [`Reordered ${{changeType}}s via drag-and-drop`],
-                        [createChangeDetail(
-                            changeType,
-                            `Reordered ${{changeType}}s via drag-and-drop`,
-                            [`Rearranged ${{changeType}} order using drag-and-drop`],
-                            oldOrder,
-                            newOrder
-                        )]
-                    );
-                    
-                    if (type === 'ingredients') {{
-                        currentRecipe.ingredients = newOrder;
-                        displayIngredients(newOrder);
-                    }} else {{
-                        currentRecipe.directions = newOrder;
-                        displayDirections(newOrder);
-                    }}
-                    saveRecipe(currentRecipe);
-                    showToast('Reordered!', 'success');
-                }});
+
+                const changeType = type === 'ingredients' ? 'ingredient' : 'direction';
+                logEdit(
+                    [`Reordered ${{changeType}}s via drag-and-drop`],
+                    [createChangeDetail(
+                        changeType,
+                        `Reordered ${{changeType}}s via drag-and-drop`,
+                        [`Rearranged ${{changeType}} order using drag-and-drop`],
+                        oldOrder,
+                        newOrder
+                    )]
+                );
+
+                if (type === 'ingredients') {{
+                    currentRecipe.ingredients = newOrder;
+                    displayIngredients(newOrder);
+                }} else {{
+                    currentRecipe.directions = newOrder;
+                    displayDirections(newOrder);
+                }}
+                saveRecipe(currentRecipe);
+                showToast('Reordered!', 'success');
             }});
         }}
-        
+
         function getDragAfterElement(container, y) {{
             const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {{
+            const result = draggableElements.reduce((closest, child) => {{
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
                 if (offset < 0 && offset > closest.offset) {{
@@ -4209,9 +4733,10 @@ class HTMLGenerator:
                 }} else {{
                     return closest;
                 }}
-            }}, {{ offset: Number.NEGATIVE_INFINITY }}).element;
+            }}, {{ offset: Number.NEGATIVE_INFINITY }});
+            return result.element !== undefined ? result.element : null;
         }}
-        
+
         // Toast Messages
         function showToast(message, type) {{
             const toast = document.createElement('div');
@@ -4251,9 +4776,12 @@ class HTMLGenerator:
             }}
             // Logged in - load recipe
             loadSavedRecipe();
+            loadSocialState();
             
-            // Initialize meta tag editing
-            initMetaTagEditing();
+            // Load custom meta from API then initialize editing
+            loadCustomMetaOptions().then(() => {{
+                initMetaTagEditing();
+            }});
         }});
     </script>
 </body>
@@ -4268,17 +4796,11 @@ class HTMLGenerator:
         try:
             recipe_data = []
             for recipe in recipes:
-                recipe_uuid = recipe.get('uuid', '')
-                if recipe_uuid:
-                    page_filename = recipe_uuid + '.html'
-                else:
-                    page_filename = self._sanitize_filename(recipe["title"]) + '.html'
-                
                 recipe_data.append({
-                    'uuid': recipe_uuid,
-                    'id': recipe.get('uuid', self._sanitize_filename(recipe["title"])),
+                    'uuid': recipe.get('uuid', ''),  # Add UUID for localStorage lookup
+                    'id': recipe.get('uuid', self._sanitize_filename(recipe["title"])),  # ID for backward compat
                     'title': recipe['title'],
-                    'url': f'recipes/{page_filename}',
+                    'url': 'recipes/' + (recipe.get('uuid', '') or self._sanitize_filename(recipe['title'])) + '.html',
                     'meal_type': recipe.get('meal_type', ''),
                     'cuisine': recipe.get('cuisine', ''),
                     'main_ingredient': recipe.get('main_ingredient', ''),
@@ -4461,6 +4983,17 @@ body {
 #method:focus {
     border-color: #FFA07A;
     box-shadow: 0 0 0 3px rgba(255, 160, 122, 0.2);
+}
+
+
+#from-source {
+    border-color: #C39BD3;
+    background: linear-gradient(to right, white 92%, #C39BD3 92%);
+}
+
+#from-source:focus {
+    border-color: #C39BD3;
+    box-shadow: 0 0 0 3px rgba(195, 155, 211, 0.2);
 }
 
 .filters select:hover,
@@ -5039,29 +5572,22 @@ body {
 }
 
 .recipe-card {
-    /* Notebook paper texture background */
-    background: linear-gradient(to right, 
-        #f5f1e8 0%, 
-        #f5f1e8 15%, 
-        #e8f2f7 15%, 
-        #e8f2f7 100%
-    );
-    /* Graph paper grid pattern */
-    background-image: 
-        linear-gradient(to right, #d84315 15%, transparent 15%),
-        repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0, 0, 0, 0.08) 19px, rgba(0, 0, 0, 0.08) 20px),
-        repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0, 0, 0, 0.08) 19px, rgba(0, 0, 0, 0.08) 20px);
-    background-size: 100% 100%, 20px 20px, 20px 20px;
-    background-position: 0 0, 0 0, 0 0;
+    background: transparent;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 9px, rgba(255, 255, 255, 0.4) 9px, rgba(255, 255, 255, 0.4) 10px),
+        repeating-linear-gradient(90deg, transparent, transparent 9px, rgba(255, 255, 255, 0.4) 9px, rgba(255, 255, 255, 0.4) 10px);
+    background-size: 10px 10px;
     border-radius: 12px;
     padding: 25px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
     transition: all 0.3s ease;
     cursor: pointer;
     text-decoration: none;
     color: #333;
     display: block;
-    border: 2px solid #d4c5b0;
+    border: 2px solid rgba(255, 255, 255, 0.75);
     max-width: 400px;
     width: 100%;
     justify-self: start;
@@ -5071,84 +5597,23 @@ body {
 
 /* Add subtle paper texture overlay */
 .recipe-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px),
-        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px);
-    pointer-events: none;
-    border-radius: 12px;
+    content: none;
 }
 
 /* Color-coded card backgrounds by meal type - softer tints over paper */
-.recipe-card[data-meal-breakfast]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 182, 193, 0.15);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
-.recipe-card[data-meal-lunch]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(78, 205, 196, 0.12);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
-.recipe-card[data-meal-dinner]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 160, 122, 0.15);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
-.recipe-card[data-meal-dessert]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(147, 112, 219, 0.12);
-    pointer-events: none;
-    border-radius: 12px;
-}
-
+.recipe-card[data-meal-breakfast]::after,
+.recipe-card[data-meal-lunch]::after,
+.recipe-card[data-meal-dinner]::after,
+.recipe-card[data-meal-dessert]::after,
 .recipe-card[data-meal-snack]::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 235, 59, 0.15);
-    pointer-events: none;
-    border-radius: 12px;
+    content: none;
 }
 
 .recipe-card:hover {
+    background: rgba(255, 255, 255, 0.15);
     transform: translateY(-5px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-    border-color: #c4b5a0;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+    border-color: rgba(255, 255, 255, 0.95);
 }
 
 .recipe-card-title {
@@ -5164,6 +5629,20 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     z-index: 1;
+}
+
+.recipe-card-from {
+    font-size: 0.85em;
+    color: #666;
+    font-style: italic;
+    margin: 2px 0 8px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: rgba(255, 255, 255, 0.75);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
 }
 
 .recipe-card-meta {
@@ -5258,17 +5737,23 @@ body {
 }
 
 .meta-select {
-    padding: 8px 12px;
+    padding: 4px 10px;
     border-radius: 20px;
     border: 2px solid #ffd700;
     background: white;
     font-size: 0.85em;
     cursor: pointer;
     outline: none;
+    min-width: 120px;
+    max-width: 220px;
+    display: inline-block;
+    vertical-align: middle;
+    appearance: auto;
 }
 
 .meta-select:focus {
     border-color: #ff69b4;
+    box-shadow: 0 0 0 2px rgba(255, 105, 180, 0.2);
 }
 
 /* Recipe Page */
@@ -5277,6 +5762,56 @@ body {
     margin: 0 auto;
     padding: 30px 20px 60px;
 }
+
+/* Social bar — favorites + reactions on recipe pages */
+.social-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0 20px;
+    padding: 12px 16px;
+    background: #fdf0f5;
+    border-radius: 10px;
+    border: 1px solid #f5c6d8;
+}
+.fav-btn-page {
+    background: none;
+    border: 1.5px solid #e05a7a;
+    color: #e05a7a;
+    border-radius: 20px;
+    padding: 5px 14px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.fav-btn-page:hover { background: #e05a7a; color: white; }
+.fav-btn-page.favorited { background: #e05a7a; color: white; }
+.reactions-panel { display: flex; align-items: center; gap: 6px; }
+.reactions-label { font-size: 0.85em; color: #888; }
+.react-btn {
+    background: none;
+    border: 1.5px solid #ddd;
+    border-radius: 20px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: all 0.15s;
+    line-height: 1.4;
+}
+.react-btn:hover { border-color: #e05a7a; transform: scale(1.15); }
+.react-btn.reacted { background: #fce8ef; border-color: #e05a7a; }
+.reaction-counts { display: flex; gap: 8px; flex-wrap: wrap; }
+.rc-chip {
+    background: #f0f0f0;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.85em;
+    color: #555;
+}
+
+
 
 .recipe-header {
     background: white;
@@ -5516,6 +6051,7 @@ const mealTypeFilter = document.getElementById('meal-type');
 const cuisineFilter = document.getElementById('cuisine');
 const ingredientFilter = document.getElementById('ingredient');
 const methodFilter = document.getElementById('method');
+const fromSourceFilter = document.getElementById('from-source');
 const clearButton = document.getElementById('clear-filters');
 const recipeGrid = document.getElementById('recipe-grid');
 const recipeCount = document.getElementById('recipe-count');
@@ -5523,8 +6059,8 @@ const recipeCount = document.getElementById('recipe-count');
 // Load recipes on page load
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('Loading recipes from recipes.json...');
-        const response = await fetch('recipes.json');
+        console.log('Loading recipes from API...');
+        const response = await fetch('api/index.php?action=get_recipes_search');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -5536,9 +6072,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`Loaded ${allRecipes.length} recipes`);
         
         populateFilters();
-        
-        // Restore filter state from URL params (preserves state on back button)
-        restoreFilterState();
+        displayRecipes();
         
         // Add event listeners
         searchInput.addEventListener('input', filterRecipes);
@@ -5546,125 +6080,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         cuisineFilter.addEventListener('change', filterRecipes);
         ingredientFilter.addEventListener('change', filterRecipes);
         methodFilter.addEventListener('change', filterRecipes);
+        fromSourceFilter.addEventListener('change', filterRecipes);
         clearButton.addEventListener('click', clearAllFilters);
         
     } catch (error) {
-        console.error('Error loading recipes:', error);
-        
-        let errorMsg = 'Error loading recipes: ' + error.message;
-        
-        // Check if it's a CORS/file protocol error
-        if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-            errorMsg += '<br><br><strong>Solution:</strong> You cannot open the HTML file directly (file:// protocol).<br>' +
-                       'Please use a local web server:<br><br>' +
-                       '1. Open Terminal/Command Prompt<br>' +
-                       '2. Navigate to: recipe_cards/website/momsrecipes<br>' +
-                       '3. Run: python -m http.server 8000<br>' +
-                       '4. Open browser to: http://localhost:8000/';
-        } else if (error.message.includes('404')) {
-            errorMsg += '<br><br><strong>Problem:</strong> recipes.json file not found.<br>' +
-                       'Make sure recipes.json exists in the momsrecipes folder.';
+        console.warn('API unavailable, trying static recipes.json fallback...', error.message);
+        try {
+            const fallback = await fetch('recipes.json');
+            if (!fallback.ok) throw new Error('recipes.json not found');
+            allRecipes = await fallback.json();
+            filteredRecipes = [...allRecipes];
+            console.log(`Loaded ${allRecipes.length} recipes from static fallback`);
+            populateFilters();
+            displayRecipes();
+            searchInput.addEventListener('input', filterRecipes);
+            mealTypeFilter.addEventListener('change', filterRecipes);
+            cuisineFilter.addEventListener('change', filterRecipes);
+            ingredientFilter.addEventListener('change', filterRecipes);
+            methodFilter.addEventListener('change', filterRecipes);
+            fromSourceFilter.addEventListener('change', filterRecipes);
+            clearButton.addEventListener('click', clearAllFilters);
+        } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+            recipeGrid.innerHTML = '<div style="color: white; background: rgba(255,0,0,0.2); padding: 30px; border-radius: 10px; border: 2px solid #ff6b6b;">Error loading recipes. Run the pipeline to generate recipes.json.</div>';
         }
-        
-        recipeGrid.innerHTML = '<div style="color: white; background: rgba(255,0,0,0.2); padding: 30px; border-radius: 10px; border: 2px solid #ff6b6b;">' + errorMsg + '</div>';
     }
 });
-
-// Save filter state to URL query params (so back button preserves filters)
-function saveFilterState() {
-    const params = new URLSearchParams();
-    if (searchInput.value) params.set('q', searchInput.value);
-    if (mealTypeFilter.value) params.set('meal', mealTypeFilter.value);
-    if (cuisineFilter.value) params.set('cuisine', cuisineFilter.value);
-    if (ingredientFilter.value) params.set('ing', ingredientFilter.value);
-    if (methodFilter.value) params.set('method', methodFilter.value);
-    
-    const newUrl = params.toString() 
-        ? window.location.pathname + '?' + params.toString()
-        : window.location.pathname;
-    
-    // replaceState so we don't create extra history entries for each keystroke
-    history.replaceState(null, '', newUrl);
-}
-
-// Restore filter state from URL query params
-function restoreFilterState() {
-    const params = new URLSearchParams(window.location.search);
-    
-    if (params.has('q')) searchInput.value = params.get('q');
-    if (params.has('meal')) mealTypeFilter.value = params.get('meal');
-    if (params.has('cuisine')) cuisineFilter.value = params.get('cuisine');
-    if (params.has('ing')) ingredientFilter.value = params.get('ing');
-    if (params.has('method')) methodFilter.value = params.get('method');
-    
-    // Apply filters (don't save state again — we just loaded it)
-    filterRecipesNoSave();
-}
-
-// Filter without saving state (used on restore to avoid circular save)
-function filterRecipesNoSave() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const mealType = mealTypeFilter.value;
-    const cuisine = cuisineFilter.value;
-    const ingredient = ingredientFilter.value;
-    const method = methodFilter.value;
-    
-    filteredRecipes = allRecipes.filter(recipe => {
-        let currentTitle = recipe.title;
-        const recipeId = recipe.uuid || recipe.id;
-        if (recipeId) {
-            try {
-                let savedRecipe = localStorage.getItem('momsrecipes_recipe_' + recipeId);
-                if (!savedRecipe) {
-                    savedRecipe = localStorage.getItem('recipe_' + recipeId);
-                }
-                if (savedRecipe) {
-                    const parsed = JSON.parse(savedRecipe);
-                    if (parsed.title) {
-                        currentTitle = parsed.title;
-                    }
-                }
-            } catch (e) {}
-        }
-        
-        const matchesSearch = !searchTerm || 
-            currentTitle.toLowerCase().includes(searchTerm) ||
-            (recipe.family_source && recipe.family_source.toLowerCase().includes(searchTerm));
-        
-        const matchesMealType = !mealType || recipe.meal_type === mealType;
-        const matchesCuisine = !cuisine || recipe.cuisine === cuisine;
-        const matchesIngredient = !ingredient || recipe.main_ingredient === ingredient;
-        const matchesMethod = !method || recipe.method === method;
-        
-        return matchesSearch && matchesMealType && matchesCuisine && 
-               matchesIngredient && matchesMethod;
-    });
-    
-    displayRecipes();
-}
 
 function populateFilters() {
     const mealTypes = new Set();
     const cuisines = new Set();
     const ingredients = new Set();
     const methods = new Set();
+    const sources = new Set();
     
-    // Get custom options from localStorage
-    const customOptions = JSON.parse(localStorage.getItem('momsrecipes_custom_meta_options') || '{}');
-    
-    // Add custom options to sets
-    if (customOptions.meal_type) {
-        customOptions.meal_type.forEach(opt => mealTypes.add(opt));
-    }
-    if (customOptions.cuisine) {
-        customOptions.cuisine.forEach(opt => cuisines.add(opt));
-    }
-    if (customOptions.main_ingredient) {
-        customOptions.main_ingredient.forEach(opt => ingredients.add(opt));
-    }
-    if (customOptions.method) {
-        customOptions.method.forEach(opt => methods.add(opt));
-    }
+    // Custom options already merged into allRecipes from API — no localStorage needed
     
     // Add recipe values
     allRecipes.forEach(recipe => {
@@ -5672,12 +6122,14 @@ function populateFilters() {
         if (recipe.cuisine) cuisines.add(recipe.cuisine);
         if (recipe.main_ingredient) ingredients.add(recipe.main_ingredient);
         if (recipe.method) methods.add(recipe.method);
+        if (recipe.family_source) sources.add(recipe.family_source);
     });
     
     populateSelect(mealTypeFilter, Array.from(mealTypes).sort());
     populateSelect(cuisineFilter, Array.from(cuisines).sort());
     populateSelect(ingredientFilter, Array.from(ingredients).sort());
     populateSelect(methodFilter, Array.from(methods).sort());
+    populateSelect(fromSourceFilter, Array.from(sources).sort());
 }
 
 // Listen for custom meta options being added on recipe pages
@@ -5685,7 +6137,7 @@ window.addEventListener('customMetaOptionAdded', function(e) {
     console.log('New custom option added:', e.detail);
     // Refresh filters to include the new option
     // Clear existing options (except "All X" default)
-    [mealTypeFilter, cuisineFilter, ingredientFilter, methodFilter].forEach(filter => {
+    [mealTypeFilter, cuisineFilter, ingredientFilter, methodFilter, fromSourceFilter].forEach(filter => {
         while (filter.options.length > 1) {
             filter.remove(1);
         }
@@ -5710,29 +6162,10 @@ function filterRecipes() {
     const cuisine = cuisineFilter.value;
     const ingredient = ingredientFilter.value;
     const method = methodFilter.value;
+    const fromSource = fromSourceFilter.value;
     
     filteredRecipes = allRecipes.filter(recipe => {
-        // Get current title from localStorage if it exists
-        let currentTitle = recipe.title;
-        const recipeId = recipe.uuid || recipe.id;
-        if (recipeId) {
-            try {
-                // Try new UUID-based key first
-                let savedRecipe = localStorage.getItem('momsrecipes_recipe_' + recipeId);
-                // Fall back to old key
-                if (!savedRecipe) {
-                    savedRecipe = localStorage.getItem('recipe_' + recipeId);
-                }
-                if (savedRecipe) {
-                    const parsed = JSON.parse(savedRecipe);
-                    if (parsed.title) {
-                        currentTitle = parsed.title;
-                    }
-                }
-            } catch (e) {
-                // If error, use original title
-            }
-        }
+        const currentTitle = recipe.title;
         
         const matchesSearch = !searchTerm || 
             currentTitle.toLowerCase().includes(searchTerm) ||
@@ -5742,13 +6175,12 @@ function filterRecipes() {
         const matchesCuisine = !cuisine || recipe.cuisine === cuisine;
         const matchesIngredient = !ingredient || recipe.main_ingredient === ingredient;
         const matchesMethod = !method || recipe.method === method;
+        const matchesSource = !fromSource || recipe.family_source === fromSource;
         
         return matchesSearch && matchesMealType && matchesCuisine && 
-               matchesIngredient && matchesMethod;
+               matchesIngredient && matchesMethod && matchesSource;
     });
     
-    // Save filter state to URL so back button preserves it
-    saveFilterState();
     displayRecipes();
 }
 
@@ -5777,7 +6209,7 @@ function createRecipeCard(recipe) {
     
     // Add data attribute for color-coded background
     if (recipe.meal_type) {
-        const mealSlug = recipe.meal_type.toLowerCase().replace(/\s+/g, '-');
+        const mealSlug = recipe.meal_type.toLowerCase().replace(/\\s+/g, '-');
         link.setAttribute('data-meal-' + mealSlug, '');
     }
     
@@ -5785,27 +6217,6 @@ function createRecipeCard(recipe) {
     
     // Check localStorage for updated title (uses UUID if available)
     let displayTitle = recipe.title;
-    const recipeId = recipe.uuid || recipe.id;
-    if (recipeId) {
-        try {
-            // Try new UUID-based key first
-            let savedRecipe = localStorage.getItem('momsrecipes_recipe_' + recipeId);
-            // Fall back to old key
-            if (!savedRecipe) {
-                savedRecipe = localStorage.getItem('recipe_' + recipeId);
-            }
-            if (savedRecipe) {
-                const parsed = JSON.parse(savedRecipe);
-                if (parsed.title) {
-                    displayTitle = parsed.title;
-                }
-            }
-        } catch (e) {
-            // If error, use original title
-            console.log('Could not load saved recipe:', e);
-        }
-    }
-    
     const title = document.createElement('h3');
     title.className = 'recipe-card-title';
     title.textContent = displayTitle;
@@ -5826,7 +6237,15 @@ function createRecipeCard(recipe) {
         meta.appendChild(createTag(recipe.method, 'method'));
     }
     
-    card.appendChild(title);
+    if (recipe.family_source) {
+        const fromEl = document.createElement('div');
+        fromEl.className = 'recipe-card-from';
+        fromEl.textContent = 'From: ' + recipe.family_source;
+        card.appendChild(title);
+        card.appendChild(fromEl);
+    } else {
+        card.appendChild(title);
+    }
     card.appendChild(meta);
     link.appendChild(card);
     
@@ -5846,462 +6265,236 @@ function clearAllFilters() {
     cuisineFilter.value = '';
     ingredientFilter.value = '';
     methodFilter.value = '';
-    // Clear URL params
-    history.replaceState(null, '', window.location.pathname);
-    filterRecipesNoSave();
+    fromSourceFilter.value = '';
+    filterRecipes();
 }'''
         
         js_path = self.output_dir / 'momsrecipes' / 'script.js'
         with open(js_path, 'w', encoding='utf-8') as f:
             f.write(js_content)
     
-    def _generate_approved_users_json(self):
-        """Generate approved_users.json from local config file or defaults.
-        
-        The pipeline can update just this file with --update-users.
-        Edit approved_users.json locally, then deploy with:
-            python3 recipe_pipeline.py --update-users
-        """
-        import json as json_mod
-        
-        # Check for local approved_users.json config
-        local_config = Path('approved_users.json')
-        if local_config.exists():
-            # Use the local file as source of truth
-            with open(local_config, 'r') as f:
-                data = json_mod.load(f)
-            users = data.get('users', [])
-            print(f"  ✓ Loaded {len(users)} approved users from local approved_users.json")
-        else:
-            # Default list
-            users = ['paul', 'sarah', 'margaret', 'john', 'admin']
-            # Create the local file so user can edit it
-            with open(local_config, 'w') as f:
-                json_mod.dump({'users': users}, f, indent=2)
-            print(f"  ✓ Created approved_users.json with {len(users)} default users")
-            print(f"    Edit this file to add/remove users, then run --update-users")
-        
-        # Write to website output
-        output_path = self.output_dir / 'momsrecipes' / 'approved_users.json'
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w') as f:
-            json_mod.dump({'users': users}, f, indent=2)
-    
     def _generate_auth_js(self):
-        """Generate authentication JavaScript"""
+        """Generate authentication JavaScript — API-backed"""
         js_content = '''// Authentication System for Mom's Recipes
-// Uses localStorage for user management
-// Approved users loaded from approved_users.json
+// Auth handled by backend API — only session token in localStorage
 
-// APPROVED USERS - loaded dynamically from server file
-let APPROVED_USERS = [];
+const AUTH_API = 'api/index.php';
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-// Load approved users list, then check auth
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        const resp = await fetch('approved_users.json');
-        if (resp.ok) {
-            const data = await resp.json();
-            APPROVED_USERS = (data.users || []).map(u => u.toLowerCase());
-            console.log(`Loaded ${APPROVED_USERS.length} approved users`);
-        } else {
-            console.warn('Could not load approved_users.json, using fallback');
-            APPROVED_USERS = ['paul', 'sarah', 'margaret', 'john', 'admin'];
-        }
-    } catch (e) {
-        console.warn('Error loading approved users, using fallback:', e);
-        APPROVED_USERS = ['paul', 'sarah', 'margaret', 'john', 'admin'];
-    }
-    checkAuth();
-});
+document.addEventListener('DOMContentLoaded', function() { checkAuth(); });
 
-// Check if username is approved
+// Approval enforced server-side only — no client-side list to maintain
 function isApprovedUser(username) {
-    return APPROVED_USERS.includes(username.toLowerCase());
+    return true;
 }
 
-// Switch between login and register tabs
 function switchTab(tab) {
     const loginTab = document.querySelector('.auth-tab:first-child');
     const registerTab = document.querySelector('.auth-tab:last-child');
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const resetForm = document.getElementById('reset-form');
-    
-    // Always hide reset form when switching tabs
-    if (resetForm) {
-        resetForm.classList.remove('active');
-    }
-    
+    if (resetForm) resetForm.classList.remove('active');
     if (tab === 'login') {
-        loginTab.classList.add('active');
-        registerTab.classList.remove('active');
-        loginForm.classList.add('active');
-        registerForm.classList.remove('active');
-        clearMessages();
+        loginTab.classList.add('active'); registerTab.classList.remove('active');
+        loginForm.classList.add('active'); registerForm.classList.remove('active');
     } else {
-        loginTab.classList.remove('active');
-        registerTab.classList.add('active');
-        loginForm.classList.remove('active');
-        registerForm.classList.add('active');
-        clearMessages();
+        loginTab.classList.remove('active'); registerTab.classList.add('active');
+        loginForm.classList.remove('active'); registerForm.classList.add('active');
     }
+    clearMessages();
 }
 
-// Show password reset form
 function showPasswordReset() {
     const loginTab = document.querySelector('.auth-tab:first-child');
     const registerTab = document.querySelector('.auth-tab:last-child');
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const resetForm = document.getElementById('reset-form');
-    
-    // Hide tabs
     if (loginTab) loginTab.style.display = 'none';
     if (registerTab) registerTab.style.display = 'none';
-    
-    // Hide forms, show only reset
-    loginForm.classList.remove('active');
-    registerForm.classList.remove('active');
-    resetForm.classList.add('active');
+    if (loginForm) loginForm.classList.remove('active');
+    if (registerForm) registerForm.classList.remove('active');
+    if (resetForm) resetForm.classList.add('active');
     clearMessages();
 }
 
-// Show login form
 function showLoginForm() {
     const loginTab = document.querySelector('.auth-tab:first-child');
     const registerTab = document.querySelector('.auth-tab:last-child');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
     const resetForm = document.getElementById('reset-form');
-    
-    // Show tabs again
     if (loginTab) loginTab.style.display = '';
     if (registerTab) registerTab.style.display = '';
-    
-    // Show login form
-    loginForm.classList.add('active');
-    registerForm.classList.remove('active');
-    resetForm.classList.remove('active');
-    
-    // Make sure login tab is active
-    if (loginTab) loginTab.classList.add('active');
-    if (registerTab) registerTab.classList.remove('active');
-    
-    clearMessages();
+    if (resetForm) resetForm.classList.remove('active');
+    switchTab('login');
 }
 
-// Clear all messages
 function clearMessages() {
-    document.getElementById('login-message').style.display = 'none';
-    document.getElementById('register-message').style.display = 'none';
-    const resetMsg = document.getElementById('reset-message');
-    if (resetMsg) resetMsg.style.display = 'none';
+    document.querySelectorAll('.auth-message').forEach(el => { el.style.display = 'none'; el.textContent = ''; });
 }
 
-// Handle password reset
-function handlePasswordReset(event) {
+function showMessage(elementId, text, type) {
+    const el = document.getElementById(elementId);
+    el.textContent = text;
+    el.className = 'auth-message ' + type;
+    el.style.display = 'block';
+}
+
+// Register via API
+async function handleRegister(event) {
     event.preventDefault();
-    
+    const username = document.getElementById('register-username').value.trim().toLowerCase();
+    const password = document.getElementById('register-password').value;
+    const confirm  = document.getElementById('register-confirm').value;
+    const fullname = document.getElementById('register-fullname').value.trim();
+
+    if (!isApprovedUser(username)) { showMessage('register-message', 'Registration denied. Username not on approved list.', 'error'); return; }
+    if (username.length < 3) { showMessage('register-message', 'Username must be at least 3 characters', 'error'); return; }
+    if (password.length < 6) { showMessage('register-message', 'Password must be at least 6 characters', 'error'); return; }
+    if (password !== confirm) { showMessage('register-message', 'Passwords do not match', 'error'); return; }
+
+    try {
+        const r = await fetch(AUTH_API + '?action=register', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username, password, fullname })
+        });
+        const data = await r.json();
+        if (data.success) {
+            showMessage('register-message', 'Registration successful! Please login.', 'success');
+            document.getElementById('register-form').reset();
+            document.getElementById('login-username').value = username;
+            setTimeout(function() { switchTab('login'); }, 1500);
+        } else {
+            showMessage('register-message', data.error || 'Registration failed', 'error');
+        }
+    } catch(e) { showMessage('register-message', 'Server error. Please try again.', 'error'); }
+}
+
+// Login via API
+async function handleLogin(event) {
+    event.preventDefault();
+    const username = document.getElementById('login-username').value.trim().toLowerCase();
+    const password = document.getElementById('login-password').value;
+
+    if (!isApprovedUser(username)) { showMessage('login-message', 'Access denied. Not an approved family member.', 'error'); return; }
+
+    try {
+        const r = await fetch(AUTH_API + '?action=login', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username, password })
+        });
+        const data = await r.json();
+        if (data.success) {
+            localStorage.setItem('momsrecipes_current_user', JSON.stringify({
+                username: data.username || username,
+                fullname: data.fullname || username,
+                loginTime: new Date().toISOString()
+            }));
+            document.getElementById('login-form').reset();
+            showMessage('login-message', 'Login successful!', 'success');
+            setTimeout(function() { showMainContent(); }, 500);
+        } else {
+            showMessage('login-message', data.error || 'Invalid username or password', 'error');
+        }
+    } catch(e) { showMessage('login-message', 'Server error. Please try again.', 'error'); }
+}
+
+// Password Reset via API
+async function handlePasswordReset(event) {
+    event.preventDefault();
     const username = document.getElementById('reset-username').value.toLowerCase().trim();
     const fullname = document.getElementById('reset-fullname').value.trim();
     const newPassword = document.getElementById('reset-new-password').value;
     const confirmPassword = document.getElementById('reset-confirm-password').value;
-    
-    // Check if user is approved
-    if (!isApprovedUser(username)) {
-        showMessage('reset-message', 'This username is not approved for registration.', 'error');
-        return;
-    }
-    
-    // Check if passwords match
-    if (newPassword !== confirmPassword) {
-        showMessage('reset-message', 'Passwords do not match.', 'error');
-        return;
-    }
-    
-    // Get all users
-    const users = JSON.parse(localStorage.getItem('momsrecipes_users') || '{}');
-    
-    // Check if user exists
-    if (!users[username]) {
-        showMessage('reset-message', 'User not found. Please register instead.', 'error');
-        return;
-    }
-    
-    // Verify full name matches
-    if (users[username].fullname.toLowerCase() !== fullname.toLowerCase()) {
-        showMessage('reset-message', 'Full name does not match our records.', 'error');
-        return;
-    }
-    
-    // Update password
-    users[username].password = hashPassword(newPassword);
-    localStorage.setItem('momsrecipes_users', JSON.stringify(users));
-    
-    showMessage('reset-message', 'Password reset successful! You can now login.', 'success');
-    
-    // Clear form
-    document.getElementById('reset-form').reset();
-    
-    // Show login form after 2 seconds
-    setTimeout(() => {
-        showLoginForm();
-        
-        // Give a moment for form to show
-        setTimeout(() => {
-            // Clear any messages
-            clearMessages();
-            
-            // Pre-fill username only
-            document.getElementById('login-username').value = username;
-            
-            // Clear password field explicitly
-            document.getElementById('login-password').value = '';
-            
-            // Focus on password field
-            document.getElementById('login-password').focus();
-        }, 100);
-    }, 2000);
+
+    if (!isApprovedUser(username)) { showMessage('reset-message', 'Username not approved.', 'error'); return; }
+    if (newPassword !== confirmPassword) { showMessage('reset-message', 'Passwords do not match.', 'error'); return; }
+
+    try {
+        const r = await fetch(AUTH_API + '?action=reset_password', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username, fullname, new_password: newPassword })
+        });
+        const data = await r.json();
+        if (data.success) {
+            showMessage('reset-message', 'Password reset successful!', 'success');
+            document.getElementById('reset-form').reset();
+            setTimeout(function() {
+                showLoginForm();
+                setTimeout(function() {
+                    clearMessages();
+                    document.getElementById('login-username').value = username;
+                    document.getElementById('login-password').value = '';
+                    document.getElementById('login-password').focus();
+                }, 100);
+            }, 2000);
+        } else {
+            showMessage('reset-message', data.error || 'Reset failed', 'error');
+        }
+    } catch(e) { showMessage('reset-message', 'Server error. Please try again.', 'error'); }
 }
 
-// Show message
-function showMessage(elementId, text, type) {
-    const el = document.getElementById(elementId);
-    el.textContent = text;
-    el.className = `auth-message ${type}`;
-    el.style.display = 'block';
-}
-
-// Hash password (simple client-side hashing)
-function hashPassword(password) {
-    // Simple hash for demo - in production use proper crypto
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-        const char = password.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
-    }
-    return hash.toString(36);
-}
-
-// Handle registration
-function handleRegister(event) {
-    event.preventDefault();
-    
-    const username = document.getElementById('register-username').value.trim();
-    const password = document.getElementById('register-password').value;
-    const confirm = document.getElementById('register-confirm').value;
-    const fullname = document.getElementById('register-fullname').value.trim();
-    
-    // Check if user is approved
-    if (!isApprovedUser(username)) {
-        showMessage('register-message', 
-            'Registration denied. Username not on approved family list. Contact administrator.', 
-            'error');
-        return;
-    }
-    
-    // Validate
-    if (username.length < 3) {
-        showMessage('register-message', 'Username must be at least 3 characters', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showMessage('register-message', 'Password must be at least 6 characters', 'error');
-        return;
-    }
-    
-    if (password !== confirm) {
-        showMessage('register-message', 'Passwords do not match', 'error');
-        return;
-    }
-    
-    // Check if username already exists
-    const users = JSON.parse(localStorage.getItem('momsrecipes_users') || '{}');
-    
-    if (users[username]) {
-        showMessage('register-message', 'Username already registered', 'error');
-        return;
-    }
-    
-    // Create new user
-    users[username] = {
-        password: hashPassword(password),
-        fullname: fullname,
-        registered: new Date().toISOString(),
-        lastLogin: null,
-        approved: true
-    };
-    
-    // Save users
-    localStorage.setItem('momsrecipes_users', JSON.stringify(users));
-    
-    // Show success and switch to login
-    showMessage('register-message', 'Registration successful! Please login.', 'success');
-    
-    // Clear form
-    document.getElementById('register-form').reset();
-    
-    // Auto-fill login form
-    document.getElementById('login-username').value = username;
-    
-    // Switch to login tab after 1.5 seconds
-    setTimeout(() => {
-        switchTab('login');
-    }, 1500);
-}
-
-// Handle login
-function handleLogin(event) {
-    event.preventDefault();
-    
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    
-    // Check if user is approved
-    if (!isApprovedUser(username)) {
-        showMessage('login-message', 
-            'Access denied. Not an approved family member.', 
-            'error');
-        return;
-    }
-    
-    // Get users
-    const users = JSON.parse(localStorage.getItem('momsrecipes_users') || '{}');
-    
-    // Check credentials
-    if (!users[username]) {
-        showMessage('login-message', 'Invalid username or password', 'error');
-        return;
-    }
-    
-    if (users[username].password !== hashPassword(password)) {
-        showMessage('login-message', 'Invalid username or password', 'error');
-        return;
-    }
-    
-    // Double-check user is approved (in case list changed)
-    if (!isApprovedUser(username)) {
-        showMessage('login-message', 
-            'Access denied. User removed from approved list.', 
-            'error');
-        return;
-    }
-    
-    // Update last login
-    users[username].lastLogin = new Date().toISOString();
-    localStorage.setItem('momsrecipes_users', JSON.stringify(users));
-    
-    // Set current user session
-    localStorage.setItem('momsrecipes_current_user', JSON.stringify({
-        username: username,
-        fullname: users[username].fullname,
-        loginTime: new Date().toISOString()
-    }));
-    
-    // Clear form
-    document.getElementById('login-form').reset();
-    
-    // Show success briefly
-    showMessage('login-message', 'Login successful!', 'success');
-    
-    // Load main content
-    setTimeout(() => {
-        showMainContent();
-    }, 500);
-}
-
-// Handle logout
 function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('momsrecipes_current_user');
-        
-        // Hide main content
         document.getElementById('main-content').classList.remove('visible');
         document.getElementById('user-info').classList.remove('visible');
-        
-        // Show auth overlay
         document.getElementById('auth-overlay').classList.remove('hidden');
-        
-        // Clear forms
         document.getElementById('login-form').reset();
         clearMessages();
     }
 }
 
-// Check authentication status
 function checkAuth() {
-    const currentUser = localStorage.getItem('momsrecipes_current_user');
-    
-    if (currentUser) {
-        const user = JSON.parse(currentUser);
-        
-        // Verify user is still approved
+    if (IS_LOCAL) {
+        localStorage.setItem('momsrecipes_current_user', JSON.stringify({
+            username: 'paul',
+            fullname: 'Paul Stamey',
+            loginTime: new Date().toISOString()
+        }));
+        showMainContent();
+        return;
+    }
+    const s = localStorage.getItem('momsrecipes_current_user');
+    if (s) {
+        const user = JSON.parse(s);
         if (!isApprovedUser(user.username)) {
-            // User removed from approved list
             localStorage.removeItem('momsrecipes_current_user');
-            showMessage('login-message', 
-                'Your access has been revoked. Contact administrator.', 
-                'error');
+            showMessage('login-message', 'Your access has been revoked.', 'error');
             document.getElementById('auth-overlay').classList.remove('hidden');
             return;
         }
-        
-        // User is logged in and approved
         showMainContent();
     } else {
-        // Show login screen
         document.getElementById('auth-overlay').classList.remove('hidden');
     }
 }
 
-// Show main content (after successful login)
 function showMainContent() {
-    const currentUser = JSON.parse(localStorage.getItem('momsrecipes_current_user'));
-    
-    if (!currentUser) {
-        // No user logged in
-        document.getElementById('auth-overlay').classList.remove('hidden');
-        return;
-    }
-    
-    // Verify approved status
-    if (!isApprovedUser(currentUser.username)) {
+    const s = localStorage.getItem('momsrecipes_current_user');
+    if (!s) { document.getElementById('auth-overlay').classList.remove('hidden'); return; }
+    const user = JSON.parse(s);
+    if (!isApprovedUser(user.username)) {
         localStorage.removeItem('momsrecipes_current_user');
         document.getElementById('auth-overlay').classList.remove('hidden');
         return;
     }
-    
-    // Hide auth overlay
     document.getElementById('auth-overlay').classList.add('hidden');
-    
-    // Show main content
     document.getElementById('main-content').classList.add('visible');
-    
-    // Show user info
-    document.getElementById('current-username').textContent = currentUser.fullname;
+    document.getElementById('current-username').textContent = user.fullname;
     document.getElementById('user-info').classList.add('visible');
 }
 
-// Get current logged-in username (for edit tracking)
 function getCurrentUsername() {
-    const currentUser = localStorage.getItem('momsrecipes_current_user');
-    if (currentUser) {
-        const user = JSON.parse(currentUser);
-        return user.username;
-    }
+    const s = localStorage.getItem('momsrecipes_current_user');
+    if (s) { try { return JSON.parse(s).username; } catch(e) {} }
     return 'Anonymous';
 }
 
-// View approved users list (for admin debugging)
 function viewApprovedUsers() {
-    console.log('Approved Users:', APPROVED_USERS);
-    console.log('Total:', APPROVED_USERS.length, 'approved users');
+    console.log('Approved users are managed server-side via the API.');
 }
 
-// Export for use in edit tracking
 window.getCurrentUsername = getCurrentUsername;
 window.viewApprovedUsers = viewApprovedUsers;
 '''

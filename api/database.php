@@ -55,6 +55,12 @@ class RecipeDatabase {
             directions TEXT NOT NULL,
             notes TEXT,
             tags TEXT,
+            meal_type TEXT,
+            cuisine TEXT,
+            main_ingredient TEXT,
+            method TEXT,
+            occasion TEXT,
+            uuid TEXT,
             image_data TEXT,
             image_filename TEXT,
             source_url TEXT,
@@ -64,16 +70,28 @@ class RecipeDatabase {
         
         CREATE TABLE IF NOT EXISTS blog_posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
+            title TEXT DEFAULT '',
             content TEXT NOT NULL,
             author TEXT,
+            date TEXT,
             category TEXT,
             tags TEXT,
+            likes TEXT DEFAULT '[]',
+            replies TEXT DEFAULT '[]',
             image_data TEXT,
             image_filename TEXT,
             published BOOLEAN DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS title_changes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            recipe_id INTEGER,
+            old_title TEXT NOT NULL,
+            new_title TEXT NOT NULL,
+            changed_by TEXT,
+            changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         
         CREATE TABLE IF NOT EXISTS edit_history (
@@ -87,6 +105,41 @@ class RecipeDatabase {
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         );
         
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            fullname TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_login DATETIME,
+            is_active INTEGER DEFAULT 1
+        );
+
+        CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            session_token TEXT UNIQUE NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            expires_at DATETIME NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS approved_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            added_by TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS custom_meta_options (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            field_type TEXT NOT NULL,
+            value TEXT NOT NULL,
+            added_by TEXT,
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(field_type, value)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes(category);
         CREATE INDEX IF NOT EXISTS idx_recipes_contributor ON recipes(contributor);
         CREATE INDEX IF NOT EXISTS idx_recipes_updated ON recipes(updated_at);
@@ -95,10 +148,13 @@ class RecipeDatabase {
         CREATE INDEX IF NOT EXISTS idx_blog_posts_created ON blog_posts(created_at);
         CREATE INDEX IF NOT EXISTS idx_history_recipe ON edit_history(recipe_id);
         CREATE INDEX IF NOT EXISTS idx_history_date ON edit_history(changed_at);
+        CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token);
+        CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
         ";
         
         try {
             $this->db->exec($schema);
+            $this->migrateSchema();
         } catch (PDOException $e) {
             error_log('Schema initialization failed: ' . $e->getMessage());
             throw new Exception('Failed to initialize database schema');
@@ -106,8 +162,52 @@ class RecipeDatabase {
     }
     
     /**
+     * Migrate existing databases to add missing columns/tables
+     */
+    private function migrateSchema() {
+        // Add likes column to blog_posts if missing
+        try {
+            $this->db->exec("ALTER TABLE blog_posts ADD COLUMN likes TEXT DEFAULT '[]'");
+        } catch (PDOException $e) { /* already exists */ }
+        
+        // Add replies column to blog_posts if missing
+        try {
+            $this->db->exec("ALTER TABLE blog_posts ADD COLUMN replies TEXT DEFAULT '[]'");
+        } catch (PDOException $e) { /* already exists */ }
+        
+        // Add date column to blog_posts if missing
+        try {
+            $this->db->exec("ALTER TABLE blog_posts ADD COLUMN date TEXT");
+        } catch (PDOException $e) { /* already exists */ }
+        
+        // Add metadata columns to recipes if missing (for existing databases)
+        $metaCols = ['meal_type', 'cuisine', 'main_ingredient', 'method', 'occasion', 'uuid'];
+        foreach ($metaCols as $col) {
+            try {
+                $this->db->exec("ALTER TABLE recipes ADD COLUMN {$col} TEXT");
+            } catch (PDOException $e) { /* already exists */ }
+        }
+        
+        // Create title_changes table if missing
+        try {
+            $this->db->exec("CREATE TABLE IF NOT EXISTS title_changes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recipe_id INTEGER,
+                old_title TEXT NOT NULL,
+                new_title TEXT NOT NULL,
+                changed_by TEXT,
+                changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )");
+        } catch (PDOException $e) { /* already exists */ }
+    }
+    
+    /**
      * Check if database is healthy
      */
+    public function raw() {
+        return $this->db;
+    }
+
     public function isHealthy() {
         try {
             $this->db->query('SELECT 1');
@@ -173,6 +273,34 @@ class RecipeDatabase {
             return null;
         }
     }
+
+    /**
+     * Get recipe by UUID string (used by recipe pages)
+     */
+    public function getRecipeByUuid($uuid) {
+        $sql = "SELECT * FROM recipes WHERE uuid = :uuid LIMIT 1";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':uuid' => $uuid]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log('Get recipe by UUID failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Resolve an id-or-uuid string to an integer recipe id.
+     * Returns the integer id, or 0 if not found.
+     */
+    public function resolveRecipeId($idOrUuid) {
+        if (is_numeric($idOrUuid)) {
+            return (int)$idOrUuid;
+        }
+        // Looks like a UUID — look it up
+        $recipe = $this->getRecipeByUuid($idOrUuid);
+        return $recipe ? (int)$recipe['id'] : 0;
+    }
     
     /**
      * Create a new recipe
@@ -180,27 +308,37 @@ class RecipeDatabase {
     public function createRecipe($data) {
         $sql = "INSERT INTO recipes (
             title, category, contributor, servings, prep_time, cook_time, total_time,
-            ingredients, directions, notes, tags, image_data, image_filename, source_url
+            ingredients, directions, notes, tags,
+            meal_type, cuisine, main_ingredient, method, occasion, uuid,
+            image_data, image_filename, source_url
         ) VALUES (
             :title, :category, :contributor, :servings, :prep_time, :cook_time, :total_time,
-            :ingredients, :directions, :notes, :tags, :image_data, :image_filename, :source_url
+            :ingredients, :directions, :notes, :tags,
+            :meal_type, :cuisine, :main_ingredient, :method, :occasion, :uuid,
+            :image_data, :image_filename, :source_url
         )";
         
         $params = [
-            ':title' => $data['title'],
-            ':category' => $data['category'] ?? null,
-            ':contributor' => $data['contributor'] ?? null,
-            ':servings' => $data['servings'] ?? null,
-            ':prep_time' => $data['prep_time'] ?? null,
-            ':cook_time' => $data['cook_time'] ?? null,
-            ':total_time' => $data['total_time'] ?? null,
-            ':ingredients' => $data['ingredients'],
-            ':directions' => $data['directions'],
-            ':notes' => $data['notes'] ?? null,
-            ':tags' => is_array($data['tags'] ?? null) ? implode(',', $data['tags']) : ($data['tags'] ?? null),
-            ':image_data' => $data['image_data'] ?? null,
+            ':title'          => $data['title'],
+            ':category'       => $data['category'] ?? null,
+            ':contributor'    => $data['contributor'] ?? null,
+            ':servings'       => $data['servings'] ?? null,
+            ':prep_time'      => $data['prep_time'] ?? null,
+            ':cook_time'      => $data['cook_time'] ?? null,
+            ':total_time'     => $data['total_time'] ?? null,
+            ':ingredients'    => $data['ingredients'],
+            ':directions'     => $data['directions'],
+            ':notes'          => $data['notes'] ?? null,
+            ':tags'           => is_array($data['tags'] ?? null) ? implode(',', $data['tags']) : ($data['tags'] ?? null),
+            ':meal_type'      => $data['meal_type'] ?? null,
+            ':cuisine'        => $data['cuisine'] ?? null,
+            ':main_ingredient'=> $data['main_ingredient'] ?? null,
+            ':method'         => $data['method'] ?? null,
+            ':occasion'       => $data['occasion'] ?? null,
+            ':uuid'           => $data['uuid'] ?? null,
+            ':image_data'     => $data['image_data'] ?? null,
             ':image_filename' => $data['image_filename'] ?? null,
-            ':source_url' => $data['source_url'] ?? null
+            ':source_url'     => $data['source_url'] ?? null
         ];
         
         try {
@@ -235,6 +373,12 @@ class RecipeDatabase {
             directions = :directions,
             notes = :notes,
             tags = :tags,
+            meal_type = :meal_type,
+            cuisine = :cuisine,
+            main_ingredient = :main_ingredient,
+            method = :method,
+            occasion = :occasion,
+            uuid = :uuid,
             image_data = :image_data,
             image_filename = :image_filename,
             source_url = :source_url,
@@ -242,21 +386,27 @@ class RecipeDatabase {
         WHERE id = :id";
         
         $params = [
-            ':id' => $id,
-            ':title' => $data['title'] ?? $oldRecipe['title'],
-            ':category' => $data['category'] ?? $oldRecipe['category'],
-            ':contributor' => $data['contributor'] ?? $oldRecipe['contributor'],
-            ':servings' => $data['servings'] ?? $oldRecipe['servings'],
-            ':prep_time' => $data['prep_time'] ?? $oldRecipe['prep_time'],
-            ':cook_time' => $data['cook_time'] ?? $oldRecipe['cook_time'],
-            ':total_time' => $data['total_time'] ?? $oldRecipe['total_time'],
-            ':ingredients' => $data['ingredients'] ?? $oldRecipe['ingredients'],
-            ':directions' => $data['directions'] ?? $oldRecipe['directions'],
-            ':notes' => $data['notes'] ?? $oldRecipe['notes'],
-            ':tags' => isset($data['tags']) ? (is_array($data['tags']) ? implode(',', $data['tags']) : $data['tags']) : $oldRecipe['tags'],
-            ':image_data' => $data['image_data'] ?? $oldRecipe['image_data'],
+            ':id'             => $id,
+            ':title'          => $data['title'] ?? $oldRecipe['title'],
+            ':category'       => $data['category'] ?? $oldRecipe['category'],
+            ':contributor'    => $data['contributor'] ?? $oldRecipe['contributor'],
+            ':servings'       => $data['servings'] ?? $oldRecipe['servings'],
+            ':prep_time'      => $data['prep_time'] ?? $oldRecipe['prep_time'],
+            ':cook_time'      => $data['cook_time'] ?? $oldRecipe['cook_time'],
+            ':total_time'     => $data['total_time'] ?? $oldRecipe['total_time'],
+            ':ingredients'    => $data['ingredients'] ?? $oldRecipe['ingredients'],
+            ':directions'     => $data['directions'] ?? $oldRecipe['directions'],
+            ':notes'          => $data['notes'] ?? $oldRecipe['notes'],
+            ':tags'           => isset($data['tags']) ? (is_array($data['tags']) ? implode(',', $data['tags']) : $data['tags']) : $oldRecipe['tags'],
+            ':meal_type'      => $data['meal_type'] ?? $oldRecipe['meal_type'] ?? null,
+            ':cuisine'        => $data['cuisine'] ?? $oldRecipe['cuisine'] ?? null,
+            ':main_ingredient'=> $data['main_ingredient'] ?? $oldRecipe['main_ingredient'] ?? null,
+            ':method'         => $data['method'] ?? $oldRecipe['method'] ?? null,
+            ':occasion'       => $data['occasion'] ?? $oldRecipe['occasion'] ?? null,
+            ':uuid'           => $data['uuid'] ?? $oldRecipe['uuid'] ?? null,
+            ':image_data'     => $data['image_data'] ?? $oldRecipe['image_data'],
             ':image_filename' => $data['image_filename'] ?? $oldRecipe['image_filename'],
-            ':source_url' => $data['source_url'] ?? $oldRecipe['source_url']
+            ':source_url'     => $data['source_url'] ?? $oldRecipe['source_url']
         ];
         
         try {
@@ -325,6 +475,19 @@ class RecipeDatabase {
         } catch (PDOException $e) {
             error_log('Add edit history failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Public method to add edit history entry from API
+     */
+    public function addEditHistoryEntry($recipeId, $data) {
+        $this->addEditHistory(
+            $recipeId,
+            $data['field_name'] ?? 'edit',
+            $data['old_value'] ?? '',
+            $data['new_value'] ?? '',
+            $data['changed_by'] ?? 'Anonymous'
+        );
     }
     
     /**
@@ -499,7 +662,14 @@ class RecipeDatabase {
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
-            return $stmt->fetchAll();
+            $rows = $stmt->fetchAll();
+            // Decode JSON fields
+            foreach ($rows as &$row) {
+                $row['likes']   = json_decode($row['likes']   ?? '[]', true) ?: [];
+                $row['replies'] = json_decode($row['replies'] ?? '[]', true) ?: [];
+                if (empty($row['date'])) $row['date'] = $row['created_at'];
+            }
+            return $rows;
         } catch (PDOException $e) {
             error_log('Get blog posts failed: ' . $e->getMessage());
             throw new Exception('Failed to fetch blog posts');
@@ -611,18 +781,262 @@ class RecipeDatabase {
     }
     
     /**
-     * Get blog post count
+     * Update a single field on a blog post
      */
-    public function getBlogPostCount() {
-        $sql = "SELECT COUNT(*) as count FROM blog_posts";
+    public function updateBlogPostField($id, $field, $value) {
+        $allowed = ['likes', 'replies', 'title', 'content', 'author', 'published'];
+        if (!in_array($field, $allowed)) return false;
+        $sql = "UPDATE blog_posts SET $field = :value, updated_at = CURRENT_TIMESTAMP WHERE id = :id";
+        try {
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([':value' => $value, ':id' => $id]);
+        } catch (PDOException $e) {
+            error_log('updateBlogPostField failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // =========================================================================
+    // TITLE CHANGE METHODS
+    // =========================================================================
+    
+    /**
+     * Get recent title changes
+     */
+    public function getTitleChanges($limit = 30) {
+        $sql = "SELECT * FROM title_changes ORDER BY changed_at DESC LIMIT :limit";
         
         try {
-            $stmt = $this->db->query($sql);
-            $result = $stmt->fetch();
-            return $result['count'];
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
         } catch (PDOException $e) {
-            error_log('Get blog post count failed: ' . $e->getMessage());
-            return 0;
+            error_log('Get title changes failed: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Save a title change record
+     */
+    public function saveTitleChange($recipeId, $oldTitle, $newTitle, $changedBy = null) {
+        $sql = "INSERT INTO title_changes (recipe_id, old_title, new_title, changed_by)
+                VALUES (:recipe_id, :old_title, :new_title, :changed_by)";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':recipe_id'  => $recipeId,
+                ':old_title'  => $oldTitle,
+                ':new_title'  => $newTitle,
+                ':changed_by' => $changedBy
+            ]);
+            return $this->db->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('Save title change failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── Auth ────────────────────────────────────────────────────────────────
+
+    public function isApprovedUser($username) {
+        try {
+            $stmt = $this->db->prepare('SELECT id FROM approved_users WHERE LOWER(username) = LOWER(:u)');
+            $stmt->execute([':u' => $username]);
+            return (bool)$stmt->fetch();
+        } catch (PDOException $e) {
+            error_log('isApprovedUser failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function addApprovedUser($username, $addedBy = null) {
+        try {
+            $stmt = $this->db->prepare('INSERT OR IGNORE INTO approved_users (username, added_by) VALUES (LOWER(:u), :by)');
+            $stmt->execute([':u' => $username, ':by' => $addedBy]);
+            return true;
+        } catch (PDOException $e) {
+            error_log('addApprovedUser failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function removeApprovedUser($username) {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM approved_users WHERE LOWER(username) = LOWER(:u)');
+            $stmt->execute([':u' => $username]);
+            // Also deactivate the user account
+            $stmt2 = $this->db->prepare('UPDATE users SET is_active = 0 WHERE LOWER(username) = LOWER(:u)');
+            $stmt2->execute([':u' => $username]);
+            return true;
+        } catch (PDOException $e) {
+            error_log('removeApprovedUser failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getApprovedUsers() {
+        try {
+            $stmt = $this->db->query('SELECT username, added_at, added_by FROM approved_users ORDER BY username');
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('getApprovedUsers failed: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function registerUser($username, $password, $fullname = '') {
+        $username = strtolower(trim($username));
+        if (!$this->isApprovedUser($username)) {
+            return ['error' => 'Username not on approved list'];
+        }
+        try {
+            $check = $this->db->prepare('SELECT id FROM users WHERE username = :u');
+            $check->execute([':u' => $username]);
+            if ($check->fetch()) {
+                return ['error' => 'Username already registered'];
+            }
+            $hash = password_hash($password, PASSWORD_BCRYPT);
+            $stmt = $this->db->prepare('INSERT INTO users (username, password_hash, fullname) VALUES (:u, :h, :f)');
+            $stmt->execute([':u' => $username, ':h' => $hash, ':f' => $fullname]);
+            return ['success' => true];
+        } catch (PDOException $e) {
+            error_log('registerUser failed: ' . $e->getMessage());
+            return ['error' => 'Registration failed'];
+        }
+    }
+
+    public function loginUser($username, $password) {
+        $username = strtolower(trim($username));
+        if (!$this->isApprovedUser($username)) {
+            return ['error' => 'Access denied'];
+        }
+        try {
+            $stmt = $this->db->prepare('SELECT id, password_hash, fullname, is_active FROM users WHERE username = :u');
+            $stmt->execute([':u' => $username]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$user || !$user['is_active'] || !password_verify($password, $user['password_hash'])) {
+                return ['error' => 'Invalid username or password'];
+            }
+            // Create session token
+            $token = bin2hex(random_bytes(32));
+            $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
+            $s = $this->db->prepare('INSERT INTO sessions (user_id, session_token, expires_at) VALUES (:uid, :tok, :exp)');
+            $s->execute([':uid' => $user['id'], ':tok' => $token, ':exp' => $expires]);
+            // Update last login
+            $this->db->prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = :id')->execute([':id' => $user['id']]);
+            return ['success' => true, 'token' => $token, 'username' => $username, 'fullname' => $user['fullname']];
+        } catch (PDOException $e) {
+            error_log('loginUser failed: ' . $e->getMessage());
+            return ['error' => 'Login failed'];
+        }
+    }
+
+    public function verifySession($token) {
+        if (!$token) return null;
+        try {
+            $stmt = $this->db->prepare('
+                SELECT u.id, u.username, u.fullname, u.is_active
+                FROM sessions s
+                JOIN users u ON s.user_id = u.id
+                WHERE s.session_token = :tok AND s.expires_at > CURRENT_TIMESTAMP
+            ');
+            $stmt->execute([':tok' => $token]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$user || !$user['is_active']) return null;
+            if (!$this->isApprovedUser($user['username'])) return null;
+            return $user;
+        } catch (PDOException $e) {
+            error_log('verifySession failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function logoutUser($token) {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM sessions WHERE session_token = :tok');
+            $stmt->execute([':tok' => $token]);
+            return true;
+        } catch (PDOException $e) {
+            error_log('logoutUser failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function resetPassword($username, $fullname, $newPassword) {
+        $username = strtolower(trim($username));
+        if (!$this->isApprovedUser($username)) {
+            return ['error' => 'Username not approved'];
+        }
+        try {
+            $stmt = $this->db->prepare('SELECT id, fullname FROM users WHERE username = :u AND is_active = 1');
+            $stmt->execute([':u' => $username]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$user) return ['error' => 'User not found'];
+            // Verify fullname matches (security check)
+            if (strtolower(trim($user['fullname'])) !== strtolower(trim($fullname))) {
+                return ['error' => 'Full name does not match our records'];
+            }
+            $hash = password_hash($newPassword, PASSWORD_BCRYPT);
+            $this->db->prepare('UPDATE users SET password_hash = :h WHERE id = :id')->execute([':h' => $hash, ':id' => $user['id']]);
+            // Invalidate all existing sessions
+            $this->db->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $user['id']]);
+            return ['success' => true];
+        } catch (PDOException $e) {
+            error_log('resetPassword failed: ' . $e->getMessage());
+            return ['error' => 'Reset failed'];
+        }
+    }
+
+    // ── Custom Meta Options ─────────────────────────────────────────────────
+
+    public function getCustomMetaOptions($fieldType = null) {
+        try {
+            if ($fieldType) {
+                $stmt = $this->db->prepare('SELECT value FROM custom_meta_options WHERE field_type = :t ORDER BY value');
+                $stmt->execute([':t' => $fieldType]);
+                return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'value');
+            } else {
+                $stmt = $this->db->query('SELECT field_type, value FROM custom_meta_options ORDER BY field_type, value');
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $result = [];
+                foreach ($rows as $row) {
+                    $result[$row['field_type']][] = $row['value'];
+                }
+                return $result;
+            }
+        } catch (PDOException $e) {
+            error_log('getCustomMetaOptions failed: ' . $e->getMessage());
+            return $fieldType ? [] : [];
+        }
+    }
+
+    public function addCustomMetaOption($fieldType, $value, $addedBy = null) {
+        try {
+            $stmt = $this->db->prepare('INSERT OR IGNORE INTO custom_meta_options (field_type, value, added_by) VALUES (:t, :v, :by)');
+            $stmt->execute([':t' => $fieldType, ':v' => $value, ':by' => $addedBy]);
+            return true;
+        } catch (PDOException $e) {
+            error_log('addCustomMetaOption failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ── Recipes as JSON (for search index) ─────────────────────────────────
+
+    public function getRecipesForSearch() {
+        try {
+            $stmt = $this->db->query('
+                SELECT id, title, category, contributor, meal_type, cuisine,
+                       main_ingredient, method, occasion, tags, uuid, updated_at
+                FROM recipes ORDER BY title
+            ');
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('getRecipesForSearch failed: ' . $e->getMessage());
+            return [];
         }
     }
 }

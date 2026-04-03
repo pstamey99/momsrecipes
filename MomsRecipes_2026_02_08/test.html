@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe & Blog API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .config-section h2 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .tests-section {
+            margin-top: 30px;
+        }
+        
+        .test-group {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .test-group h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 20px;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .test-button:active {
+            transform: translateY(0);
+        }
+        
+        .test-button.secondary {
+            background: #dc3545;
+        }
+        
+        .test-button.secondary:hover {
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+        
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .result-box.show {
+            display: block;
+        }
+        
+        .result-box.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .result-box.success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .result-box pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 0;
+            color: #333;
+        }
+        
+        .section-divider {
+            margin: 40px 0 20px 0;
+            padding-top: 20px;
+            border-top: 3px solid #667eea;
+        }
+        
+        .section-divider h2 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍳 Recipe & Blog API Tester</h1>
+            <p>Complete testing interface for recipes, blog posts, and all API endpoints</p>
+        </div>
+        
+        <div class="content">
+            <!-- Configuration Section -->
+            <div class="config-section">
+                <h2>⚙️ Configuration</h2>
+                <div class="input-group">
+                    <label for="apiUrl">API Base URL:</label>
+                    <input type="text" id="apiUrl" value="https://paulstamey.com/momsrecipes/api" placeholder="https://your-domain.com/api">
+                </div>
+                <div class="input-group">
+                    <label for="apiKey">API Key (optional - only if auth enabled):</label>
+                    <input type="text" id="apiKey" placeholder="your-api-key-here">
+                </div>
+            </div>
+            
+            <!-- Tests Section -->
+            <div class="tests-section">
+                <!-- Basic Tests -->
+                <div class="test-group">
+                    <h3>🏥 Health Check & Statistics</h3>
+                    <button class="test-button" onclick="testHealthCheck()">Health Check</button>
+                    <button class="test-button" onclick="testStats()">Get Statistics</button>
+                    <div id="health-result" class="result-box"></div>
+                </div>
+                
+                <!-- Recipe Section -->
+                <div class="section-divider">
+                    <h2>📖 Recipe Management</h2>
+                </div>
+                
+                <!-- Recipe CRUD -->
+                <div class="test-group">
+                    <h3>📝 Recipe Operations</h3>
+                    <button class="test-button" onclick="testGetAllRecipes()">Get All Recipes</button>
+                    <button class="test-button" onclick="testCreateRecipe()">Create Test Recipe</button>
+                    <button class="test-button" onclick="testGetRecipe()">Get Recipe by ID</button>
+                    <button class="test-button" onclick="testUpdateRecipe()">Update Recipe</button>
+                    <button class="test-button secondary" onclick="testDeleteRecipe()">Delete Recipe</button>
+                    <div id="recipe-result" class="result-box"></div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Recipe ID:</label>
+                        <input type="number" id="recipeId" value="1" placeholder="1">
+                    </div>
+                </div>
+                
+                <!-- Recipe Search -->
+                <div class="test-group">
+                    <h3>🔍 Recipe Search & Filter</h3>
+                    <button class="test-button" onclick="testSearchRecipes()">Search Recipes</button>
+                    <button class="test-button" onclick="testFilterByCategory()">Filter by Category</button>
+                    <button class="test-button" onclick="testFilterByTags()">Filter by Tags</button>
+                    <div id="search-result" class="result-box"></div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Search Query:</label>
+                        <input type="text" id="searchQuery" value="test" placeholder="Enter search term">
+                    </div>
+                </div>
+                
+                <!-- Recipe Metadata -->
+                <div class="test-group">
+                    <h3>🏷️ Recipe Metadata</h3>
+                    <button class="test-button" onclick="testGetCategories()">Get Categories</button>
+                    <button class="test-button" onclick="testGetTags()">Get Tags</button>
+                    <button class="test-button" onclick="testGetContributors()">Get Contributors</button>
+                    <div id="metadata-result" class="result-box"></div>
+                </div>
+                
+                <!-- Recipe History -->
+                <div class="test-group">
+                    <h3>📜 Recipe Edit History</h3>
+                    <button class="test-button" onclick="testGetEditHistory()">Get Edit History</button>
+                    <div id="history-result" class="result-box"></div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Recipe ID for history:</label>
+                        <input type="number" id="historyRecipeId" value="1" placeholder="1">
+                    </div>
+                </div>
+                
+                <!-- Blog Section -->
+                <div class="section-divider">
+                    <h2>📰 Blog Post Management</h2>
+                </div>
+                
+                <!-- Blog CRUD -->
+                <div class="test-group">
+                    <h3>✍️ Blog Post Operations</h3>
+                    <button class="test-button" onclick="testGetAllBlogPosts()">Get All Blog Posts</button>
+                    <button class="test-button" onclick="testCreateBlogPost()">Create Test Blog Post</button>
+                    <button class="test-button" onclick="testGetBlogPost()">Get Blog Post by ID</button>
+                    <button class="test-button" onclick="testUpdateBlogPost()">Update Blog Post</button>
+                    <button class="test-button secondary" onclick="testDeleteBlogPost()">Delete Blog Post</button>
+                    <div id="blog-result" class="result-box"></div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Blog Post ID:</label>
+                        <input type="number" id="blogPostId" value="1" placeholder="1">
+                    </div>
+                </div>
+                
+                <!-- Blog Search -->
+                <div class="test-group">
+                    <h3>🔍 Blog Post Search & Filter</h3>
+                    <button class="test-button" onclick="testSearchBlogPosts()">Search Blog Posts</button>
+                    <button class="test-button" onclick="testFilterPublished()">Published Only</button>
+                    <button class="test-button" onclick="testFilterDrafts()">Drafts Only</button>
+                    <div id="blog-search-result" class="result-box"></div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Blog Search Query:</label>
+                        <input type="text" id="blogSearchQuery" value="test" placeholder="Enter search term">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value.replace(/\/$/, '');
+        }
+        
+        function getHeaders() {
+            const headers = {'Content-Type': 'application/json'};
+            const apiKey = document.getElementById('apiKey').value;
+            if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+            return headers;
+        }
+        
+        function displayResult(elementId, data, isError = false) {
+            const resultBox = document.getElementById(elementId);
+            resultBox.className = 'result-box show ' + (isError ? 'error' : 'success');
+            resultBox.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // Health & Stats
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/');
+                const data = await response.json();
+                displayResult('health-result', data, !response.ok);
+            } catch (error) {
+                displayResult('health-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testStats() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/stats');
+                const data = await response.json();
+                displayResult('health-result', data, !response.ok);
+            } catch (error) {
+                displayResult('health-result', { error: error.message }, true);
+            }
+        }
+        
+        // Recipe Operations
+        async function testGetAllRecipes() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/recipes');
+                const data = await response.json();
+                displayResult('recipe-result', data, !response.ok);
+            } catch (error) {
+                displayResult('recipe-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testCreateRecipe() {
+            try {
+                const recipe = {
+                    title: 'Test Recipe - ' + new Date().toLocaleTimeString(),
+                    category: 'Test Category',
+                    contributor: 'API Tester',
+                    servings: '4',
+                    prep_time: '15 min',
+                    cook_time: '30 min',
+                    ingredients: 'Ingredient 1\nIngredient 2\nIngredient 3',
+                    instructions: 'Step 1\nStep 2\nStep 3',
+                    tags: 'test,automated',
+                    notes: 'Created via API test'
+                };
+                const response = await fetch(getApiUrl() + '/index.php/recipes', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(recipe)
+                });
+                const data = await response.json();
+                displayResult('recipe-result', data, !response.ok);
+                if (data.recipe?.id) document.getElementById('recipeId').value = data.recipe.id;
+            } catch (error) {
+                displayResult('recipe-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testGetRecipe() {
+            try {
+                const id = document.getElementById('recipeId').value;
+                const response = await fetch(getApiUrl() + '/index.php/recipes/' + id);
+                const data = await response.json();
+                displayResult('recipe-result', data, !response.ok);
+            } catch (error) {
+                displayResult('recipe-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testUpdateRecipe() {
+            try {
+                const id = document.getElementById('recipeId').value;
+                const response = await fetch(getApiUrl() + '/index.php/recipes/' + id, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ notes: 'Updated ' + new Date().toLocaleString() })
+                });
+                const data = await response.json();
+                displayResult('recipe-result', data, !response.ok);
+            } catch (error) {
+                displayResult('recipe-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testDeleteRecipe() {
+            if (!confirm('Delete this recipe?')) return;
+            try {
+                const id = document.getElementById('recipeId').value;
+                const response = await fetch(getApiUrl() + '/index.php/recipes/' + id, {method: 'DELETE'});
+                const data = await response.json();
+                displayResult('recipe-result', data, !response.ok);
+            } catch (error) {
+                displayResult('recipe-result', { error: error.message }, true);
+            }
+        }
+        
+        // Recipe Search
+        async function testSearchRecipes() {
+            try {
+                const query = document.getElementById('searchQuery').value;
+                const response = await fetch(getApiUrl() + '/index.php/recipes?search=' + encodeURIComponent(query));
+                const data = await response.json();
+                displayResult('search-result', data, !response.ok);
+            } catch (error) {
+                displayResult('search-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testFilterByCategory() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/recipes?category=Test Category');
+                const data = await response.json();
+                displayResult('search-result', data, !response.ok);
+            } catch (error) {
+                displayResult('search-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testFilterByTags() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/recipes?tags=test');
+                const data = await response.json();
+                displayResult('search-result', data, !response.ok);
+            } catch (error) {
+                displayResult('search-result', { error: error.message }, true);
+            }
+        }
+        
+        // Recipe Metadata
+        async function testGetCategories() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/categories');
+                const data = await response.json();
+                displayResult('metadata-result', data, !response.ok);
+            } catch (error) {
+                displayResult('metadata-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testGetTags() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/tags');
+                const data = await response.json();
+                displayResult('metadata-result', data, !response.ok);
+            } catch (error) {
+                displayResult('metadata-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testGetContributors() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/contributors');
+                const data = await response.json();
+                displayResult('metadata-result', data, !response.ok);
+            } catch (error) {
+                displayResult('metadata-result', { error: error.message }, true);
+            }
+        }
+        
+        // Recipe History
+        async function testGetEditHistory() {
+            try {
+                const id = document.getElementById('historyRecipeId').value;
+                const response = await fetch(getApiUrl() + '/index.php/recipes/' + id + '/history');
+                const data = await response.json();
+                displayResult('history-result', data, !response.ok);
+            } catch (error) {
+                displayResult('history-result', { error: error.message }, true);
+            }
+        }
+        
+        // Blog Operations
+        async function testGetAllBlogPosts() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts');
+                const data = await response.json();
+                displayResult('blog-result', data, !response.ok);
+            } catch (error) {
+                displayResult('blog-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testCreateBlogPost() {
+            try {
+                const post = {
+                    title: 'Test Blog Post - ' + new Date().toLocaleTimeString(),
+                    content: 'This is test content.\n\nMultiple paragraphs supported!\n\nWrite about anything!',
+                    author: 'API Tester',
+                    category: 'Recipes',
+                    tags: 'test,automated,blog',
+                    published: true
+                };
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(post)
+                });
+                const data = await response.json();
+                displayResult('blog-result', data, !response.ok);
+                if (data.post?.id) document.getElementById('blogPostId').value = data.post.id;
+            } catch (error) {
+                displayResult('blog-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testGetBlogPost() {
+            try {
+                const id = document.getElementById('blogPostId').value;
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts/' + id);
+                const data = await response.json();
+                displayResult('blog-result', data, !response.ok);
+            } catch (error) {
+                displayResult('blog-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testUpdateBlogPost() {
+            try {
+                const id = document.getElementById('blogPostId').value;
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts/' + id, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ content: 'Updated ' + new Date().toLocaleString() })
+                });
+                const data = await response.json();
+                displayResult('blog-result', data, !response.ok);
+            } catch (error) {
+                displayResult('blog-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testDeleteBlogPost() {
+            if (!confirm('Delete this blog post?')) return;
+            try {
+                const id = document.getElementById('blogPostId').value;
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts/' + id, {method: 'DELETE'});
+                const data = await response.json();
+                displayResult('blog-result', data, !response.ok);
+            } catch (error) {
+                displayResult('blog-result', { error: error.message }, true);
+            }
+        }
+        
+        // Blog Search
+        async function testSearchBlogPosts() {
+            try {
+                const query = document.getElementById('blogSearchQuery').value;
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts?search=' + encodeURIComponent(query));
+                const data = await response.json();
+                displayResult('blog-search-result', data, !response.ok);
+            } catch (error) {
+                displayResult('blog-search-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testFilterPublished() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts?published=true');
+                const data = await response.json();
+                displayResult('blog-search-result', data, !response.ok);
+            } catch (error) {
+                displayResult('blog-search-result', { error: error.message }, true);
+            }
+        }
+        
+        async function testFilterDrafts() {
+            try {
+                const response = await fetch(getApiUrl() + '/index.php/blog-posts?published=false');
+                const data = await response.json();
+                displayResult('blog-search-result', data, !response.ok);
+            } catch (error) {
+                displayResult('blog-search-result', { error: error.message }, true);
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', testHealthCheck);
+    </script>
+</body>
+</html>

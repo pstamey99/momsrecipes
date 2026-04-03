@@ -148,6 +148,241 @@
             font-size: 14px;
         }
         
+        /* Import Recipe Button */
+        .import-recipe-btn {
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.88em;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 14px;
+            box-shadow: 0 3px 12px rgba(153,50,204,0.35);
+            transition: all 0.2s;
+            vertical-align: middle;
+        }
+        .import-recipe-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 16px rgba(153,50,204,0.5);
+        }
+
+        /* Import Modal */
+        .import-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9000;
+            overflow-y: auto;
+            padding: 30px 16px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .import-modal-overlay.active { display: flex; }
+
+        .import-modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 680px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        .import-modal-close {
+            position: absolute;
+            top: 14px; right: 18px;
+            background: none; border: none;
+            font-size: 1.4em; cursor: pointer;
+            color: #888; z-index: 10;
+            transition: color 0.2s;
+        }
+        .import-modal-close:hover { color: #333; }
+
+        .import-modal-header {
+            background: linear-gradient(135deg, #ff69b4 0%, #9932cc 100%);
+            color: white;
+            padding: 28px 30px 22px;
+            text-align: center;
+        }
+        .import-modal-icon { font-size: 2.4em; margin-bottom: 6px; }
+        .import-modal-header h2 { margin: 0 0 6px; font-size: 1.5em; }
+        .import-modal-header p  { margin: 0; opacity: 0.88; font-size: 0.88em; }
+
+        .import-step { padding: 24px 28px 28px; }
+
+        .import-drop-zone {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+            margin-bottom: 16px;
+        }
+        .import-drop-zone:hover, .import-drop-zone.dragover {
+            border-color: #ff69b4;
+            background: #fff0f8;
+        }
+        .import-drop-icon { font-size: 2.4em; margin-bottom: 8px; }
+        .import-drop-title { font-weight: 700; color: #333; margin: 0 0 4px; font-size: 1em; }
+        .import-drop-sub   { color: #888; font-size: 0.83em; margin: 0; }
+
+        #import-preview-img {
+            max-height: 200px;
+            max-width: 100%;
+            border-radius: 8px;
+            border: 2px solid #ffb3d9;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+            display: block;
+            margin: 0 auto 10px;
+        }
+        .import-change-btn {
+            display: inline-block;
+            font-size: 0.8em;
+            color: #888;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            padding: 3px 10px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        .import-change-btn:hover { color: #e91e8c; border-color: #e91e8c; }
+
+        #import-extra-prompt {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 0.88em;
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #import-extra-prompt:focus { border-color: #ff69b4; }
+
+        .import-extract-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 13px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(153,50,204,0.3);
+        }
+        .import-extract-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(153,50,204,0.45);
+        }
+        .import-extract-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        .import-status {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            text-align: center;
+        }
+        .import-status.info  { background: #e8f0fe; color: #1a56b0; }
+        .import-status.error { background: #fee; color: #c00; border: 1px solid #fcc; }
+        .import-status.success { background: #e6f9f0; color: #0a6b3a; }
+
+        /* Review step */
+        .import-review-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .import-field-full  { grid-column: 1 / -1; }
+        .import-field-half  { grid-column: span 1; }
+        .import-review-grid label {
+            display: block;
+            font-size: 0.78em;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .import-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: #aaa; }
+        .ir-input, .ir-select, .ir-textarea {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid #eee;
+            border-radius: 7px;
+            padding: 9px 11px;
+            font-family: inherit;
+            font-size: 0.9em;
+            outline: none;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        .ir-input:focus, .ir-select:focus, .ir-textarea:focus { border-color: #ff69b4; }
+        .ir-textarea { resize: vertical; }
+        .ir-custom-btn {
+            display: inline-block;
+            margin-top: 5px;
+            background: none;
+            border: none;
+            padding: 2px 0;
+            font-size: 0.78em;
+            color: #c850c0;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            transition: color 0.15s;
+        }
+        .ir-custom-btn:hover { color: #9932cc; text-decoration: underline; }
+
+        .import-action-row {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .import-back-btn {
+            background: #f0f0f0;
+            color: #555;
+            border: none;
+            padding: 11px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .import-back-btn:hover { background: #e0e0e0; }
+        .import-save-btn {
+            background: linear-gradient(135deg, #ff69b4, #9932cc);
+            color: white;
+            border: none;
+            padding: 11px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(153,50,204,0.3);
+        }
+        .import-save-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .import-save-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        @media (max-width: 500px) {
+            .import-review-grid { grid-template-columns: 1fr; }
+            .import-field-half  { grid-column: span 1; }
+        }
+
         .user-info {
             position: absolute;
             top: 20px;
@@ -329,11 +564,16 @@
                     <option value="">All Methods</option>
                 </select>
                 
+                <select id="from-source">
+                    <option value="">All Sources</option>
+                </select>
+                
                 <button id="clear-filters">Clear All</button>
             </div>
             
             <div class="stats">
                 <span id="recipe-count">0 recipes</span>
+                <button id="import-recipe-btn" class="import-recipe-btn" onclick="openImportModal()">📸 Import Recipe</button>
             </div>
         </div>
         
@@ -375,101 +615,152 @@
         </div>
     </div>
     
+    <!-- Photo Import Modal -->
+    <div id="import-modal" class="import-modal-overlay" onclick="handleImportOverlayClick(event)">
+        <div class="import-modal-content">
+            <button class="import-modal-close" onclick="closeImportModal()">✕</button>
+
+            <!-- Step 1: Upload -->
+            <div id="import-step-upload" class="import-step">
+                <div class="import-modal-header">
+                    <div class="import-modal-icon">📸</div>
+                    <h2>Import Recipe from Photo</h2>
+                    <p>Upload a photo of a handwritten or printed recipe — Claude will read and extract it</p>
+                </div>
+                <div class="import-drop-zone" id="import-drop-zone" onclick="document.getElementById('import-file-input').click()">
+                    <input type="file" id="import-file-input" accept="image/*" style="display:none" onchange="importHandleFile(event)">
+                    <div id="import-drop-content">
+                        <div class="import-drop-icon">🍽️</div>
+                        <p class="import-drop-title">Drop a recipe photo here</p>
+                        <p class="import-drop-sub">or click to browse &nbsp;·&nbsp; JPG, PNG, HEIC, WEBP</p>
+                    </div>
+                    <div id="import-preview-wrap" style="display:none">
+                        <img id="import-preview-img" src="" alt="preview">
+                        <span class="import-change-btn" onclick="event.stopPropagation(); importResetPhoto()">✕ Change photo</span>
+                    </div>
+                </div>
+                <textarea id="import-extra-prompt" placeholder="Optional: extra context e.g. 'This is from Grandma Helen' or 'Focus on the ingredients list'"></textarea>
+                <button id="import-extract-btn" class="import-extract-btn" onclick="importExtract()" disabled>✨ Extract Recipe</button>
+                <div id="import-status" class="import-status" style="display:none"></div>
+            </div>
+
+            <!-- Step 2: Review & Save -->
+            <div id="import-step-review" class="import-step" style="display:none">
+                <div class="import-modal-header">
+                    <h2>✅ Review & Save</h2>
+                    <p>All fields are editable — fix anything before saving</p>
+                </div>
+                <div class="import-review-grid">
+                    <div class="import-field-full">
+                        <label>Title</label>
+                        <input type="text" id="ir-title" class="ir-input">
+                    </div>
+                    <div class="import-field-half">
+                        <label>From (family source)</label>
+                        <input type="text" id="ir-from" class="ir-input" placeholder="e.g. Grandma Helen">
+                    </div>
+                    <div class="import-field-half">
+                        <label>Meal Type</label>
+                        <select id="ir-meal-type" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-meal-type','meal_type')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Cuisine</label>
+                        <select id="ir-cuisine" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-cuisine','cuisine')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Main Ingredient</label>
+                        <select id="ir-ingredient" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-ingredient','main_ingredient')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-half">
+                        <label>Method</label>
+                        <select id="ir-method" class="ir-select">
+                            <option value="">-- select --</option>
+                        </select>
+                        <button type="button" class="ir-custom-btn" onclick="importAddCustom('ir-method','method')">➕ Add custom</button>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Ingredients <span class="import-hint">(one per line)</span></label>
+                        <textarea id="ir-ingredients" class="ir-textarea" rows="8"></textarea>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Directions <span class="import-hint">(one step per line)</span></label>
+                        <textarea id="ir-directions" class="ir-textarea" rows="8"></textarea>
+                    </div>
+                    <div class="import-field-full">
+                        <label>Notes <span class="import-hint">(optional)</span></label>
+                        <textarea id="ir-notes" class="ir-textarea" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="import-action-row">
+                    <button class="import-back-btn" onclick="importGoBack()">← Back</button>
+                    <button id="import-save-btn" class="import-save-btn" onclick="importSave()">💾 Save to Database</button>
+                </div>
+                <div id="import-save-status" class="import-status" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+
     <script src="script.js"></script>
     <script src="auth.js"></script>
     <script>
-    // Blog functionality
-    document.addEventListener('DOMContentLoaded', async function() {
-        const blogPosts = await loadBlogPosts();
-        displayBlogPosts(blogPosts);
-        
-        document.getElementById('post-memory').addEventListener('click', async function() {
-            const content = document.getElementById('blog-content').value.trim();
-            
-            if (!content) {
-                alert('Please write a memory to share');
-                return;
-            }
-            
-            const currentUser = localStorage.getItem('momsrecipes_current_user');
-            if (!currentUser) {
-                alert('You must be logged in to post');
-                return;
-            }
-            
-            // Parse user data and get display name
-            const userData = JSON.parse(currentUser);
-            const displayName = userData.fullname || userData.username;
-            
-            const post = {
-                id: Date.now(),
-                content: content,
-                author: displayName,
-                date: new Date().toISOString(),
-                likes: 0,
-                replies: []
-            };
-            
-            const posts = await loadBlogPosts();
-            posts.unshift(post);
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-            
-            // Clear form
-            document.getElementById('blog-content').value = '';
-        });
-    });
-    
-    function loadBlogPosts() {
+    // ========================================================================
+    // API-backed Blog & Title Changes
+    // ========================================================================
+    const API_URL = 'api/index.php';
+
+    function getCurrentUser() {
+        const s = localStorage.getItem('momsrecipes_current_user');
+        if (!s) return null;
+        try { return JSON.parse(s); } catch(e) { return null; }
+    }
+
+    // ---- Blog: Load from API ----
+    async function loadBlogPosts() {
         try {
-            const stored = localStorage.getItem('momsrecipes_blog_posts');
-            if (!stored) return [];
-            
-            const parsed = JSON.parse(stored);
-            
-            // Ensure it's an array
-            if (Array.isArray(parsed)) {
-                return parsed;
-            } else {
-                console.warn('Blog posts data was not an array, resetting');
-                localStorage.removeItem('momsrecipes_blog_posts');
-                return [];
-            }
-        } catch (e) {
-            console.error('Error loading blog posts:', e);
-            localStorage.removeItem('momsrecipes_blog_posts');
-            return [];
-        }
+            const r = await fetch(API_URL + '?action=get_blog');
+            if (!r.ok) return [];
+            const posts = await r.json();
+            return Array.isArray(posts) ? posts : [];
+        } catch(e) { console.error('Blog load error:', e); return []; }
     }
-    
-    function saveBlogPosts(posts) {
-        localStorage.setItem('momsrecipes_blog_posts', JSON.stringify(posts));
+
+    function normalizePosts(post) {
+        return {
+            ...post,
+            likes:   typeof post.likes   === 'string' ? JSON.parse(post.likes   || '0')  : (post.likes || 0),
+            replies: typeof post.replies === 'string' ? JSON.parse(post.replies || '[]') : (post.replies || [])
+        };
     }
-    
+
+    // ---- Blog: Display ----
     function displayBlogPosts(posts) {
         const container = document.getElementById('blog-posts');
-        
         if (posts.length === 0) {
             container.innerHTML = '<p class="no-posts">No memories shared yet. Be the first!</p>';
             return;
         }
-        
-        container.innerHTML = posts.map(post => {
-            // Handle legacy posts where author might be JSON
-            let authorName = post.author;
-            try {
-                // Try to parse as JSON (old posts)
-                const authorData = JSON.parse(post.author);
-                authorName = authorData.fullname || authorData.username;
-            } catch(e) {
-                // Not JSON, use as-is (new posts)
-                authorName = post.author;
-            }
-            
-            const replyCount = (post.replies && post.replies.length > 0) ? post.replies.length : 0;
-            const replyText = replyCount > 0 ? `(${replyCount})` : '';
-            const deleteButton = isPostAuthor(post.author) ? `<button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>` : '';
-            
+        const me = getCurrentUser();
+        const myName = me ? (me.fullname || me.username) : '';
+
+        container.innerHTML = posts.map(raw => {
+            const post = normalizePosts(raw);
+            let authorName = post.author || 'Anonymous';
+            try { const d = JSON.parse(post.author); authorName = d.fullname || d.username; } catch(e) {}
+
+            const delBtn = (authorName === myName) ? `<button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>` : '';
+            const replyCount = post.replies.length;
+            const replyText  = replyCount > 0 ? `(${replyCount})` : '';
+
             return `
             <div class="blog-post" data-id="${post.id}">
                 <div class="post-meta">
@@ -478,168 +769,32 @@
                 </div>
                 <p class="post-content">${escapeHtml(post.content)}</p>
                 <div class="post-actions">
-                    <button class="like-btn" onclick="likePost(${post.id})">
-                        ❤️ ${post.likes || 0}
-                    </button>
-                    <button class="reply-btn" onclick="toggleReplyForm(${post.id})">
-                        💬 Reply ${replyText}
-                    </button>
-                    ${deleteButton}
+                    <button class="like-btn" onclick="likePost(${post.id})">❤️ ${post.likes}</button>
+                    <button class="reply-btn" onclick="toggleReplyForm(${post.id})">💬 Reply ${replyText}</button>
+                    ${delBtn}
                 </div>
-                
-                <!-- Reply Form (hidden by default) -->
-                <div class="reply-form" id="reply-form-${post.id}" style="display: none;">
+                <div class="reply-form" id="reply-form-${post.id}" style="display:none;">
                     <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Write a reply..." rows="2" maxlength="300"></textarea>
                     <div class="reply-form-actions">
                         <button class="btn-reply" onclick="submitReply(${post.id})">Post Reply</button>
                         <button class="btn-cancel" onclick="toggleReplyForm(${post.id})">Cancel</button>
                     </div>
                 </div>
-                
-                <!-- Replies List -->
                 <div class="replies-section" id="replies-${post.id}">
-                    ${displayReplies(post.replies || [], post.id)}
+                    ${displayReplies(post.replies, post.id)}
                 </div>
-            </div>
-        `;
+            </div>`;
         }).join('');
     }
-    
-    function isPostAuthor(author) {
-        const currentUser = localStorage.getItem('momsrecipes_current_user');
-        if (!currentUser) return false;
-        
-        // Parse current user to get display name
-        const userData = JSON.parse(currentUser);
-        const displayName = userData.fullname || userData.username;
-        
-        // Check if author matches current user's display name
-        // Also handle old posts that might have JSON stored as author
-        if (author === displayName) return true;
-        if (author === currentUser) return true; // Legacy support
-        
-        return false;
-    }
-    
-    async function likePost(postId) {
-        const posts = await loadBlogPosts();
-        const post = posts.find(p => p.id === postId);
-        if (post) {
-            post.likes = (post.likes || 0) + 1;
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-        }
-    }
-    
-    async function deletePost(postId) {
-        if (!confirm('Delete this memory?')) return;
-        
-        const posts = await loadBlogPosts();
-        const filtered = posts.filter(p => p.id !== postId);
-        await saveBlogPosts(filtered);
-        displayBlogPosts(filtered);
-    }
-    
-    function formatDate(dateStr) {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diff = now - date;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        
-        if (days === 0) return 'Today';
-        if (days === 1) return 'Yesterday';
-        if (days < 7) return `${days} days ago`;
-        return date.toLocaleDateString();
-    }
-    
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    // Reply functions
-    function toggleReplyForm(postId) {
-        const form = document.getElementById(`reply-form-${postId}`);
-        if (form.style.display === 'none') {
-            form.style.display = 'block';
-            document.getElementById(`reply-input-${postId}`).focus();
-        } else {
-            form.style.display = 'none';
-            document.getElementById(`reply-input-${postId}`).value = '';
-        }
-    }
-    
-    async function submitReply(postId) {
-        const currentUser = localStorage.getItem('momsrecipes_current_user');
-        if (!currentUser) {
-            alert('You must be logged in to reply');
-            return;
-        }
-        
-        // Parse user data and get display name
-        const userData = JSON.parse(currentUser);
-        const displayName = userData.fullname || userData.username;
-        
-        const replyInput = document.getElementById(`reply-input-${postId}`);
-        const content = replyInput.value.trim();
-        
-        if (!content) {
-            alert('Please write a reply');
-            return;
-        }
-        
-        const posts = await loadBlogPosts();
-        const post = posts.find(p => p.id === postId);
-        
-        if (post) {
-            if (!post.replies) {
-                post.replies = [];
-            }
-            
-            const reply = {
-                id: Date.now(),
-                content: content,
-                author: displayName,
-                date: new Date().toISOString()
-            };
-            
-            post.replies.push(reply);
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-        }
-    }
-    
-    async function deleteReply(postId, replyId) {
-        if (!confirm('Delete this reply?')) return;
-        
-        const posts = await loadBlogPosts();
-        const post = posts.find(p => p.id === postId);
-        
-        if (post && post.replies) {
-            post.replies = post.replies.filter(r => r.id !== replyId);
-            await saveBlogPosts(posts);
-            displayBlogPosts(posts);
-        }
-    }
-    
+
     function displayReplies(replies, postId) {
-        if (!replies || replies.length === 0) {
-            return '';
-        }
-        
+        if (!replies || replies.length === 0) return '';
+        const me = getCurrentUser();
+        const myName = me ? (me.fullname || me.username) : '';
         return replies.map(reply => {
-            // Handle legacy replies where author might be JSON
-            let authorName = reply.author;
-            try {
-                const authorData = JSON.parse(reply.author);
-                authorName = authorData.fullname || authorData.username;
-            } catch(e) {
-                authorName = reply.author;
-            }
-            
-            const deleteButton = isPostAuthor(reply.author) ? `<button class="delete-reply-btn" onclick="deleteReply(${postId}, ${reply.id})">Delete</button>` : '';
-            
+            let authorName = reply.author || reply.user || 'Anonymous';
+            try { const d = JSON.parse(reply.author); authorName = d.fullname || d.username; } catch(e) {}
+            const delBtn = (authorName === myName) ? `<button class="delete-reply-btn" onclick="deleteReply(${postId}, ${reply.id})">Delete</button>` : '';
             return `
             <div class="reply-item">
                 <div class="reply-meta">
@@ -647,53 +802,340 @@
                     <span class="reply-date">${formatDate(reply.date)}</span>
                 </div>
                 <p class="reply-content">${escapeHtml(reply.content)}</p>
-                ${deleteButton}
-            </div>
-        `;
+                ${delBtn}
+            </div>`;
         }).join('');
     }
-    
-    // Title Changes functionality
-    function loadTitleChanges() {
-        const stored = localStorage.getItem('momsrecipes_master_title_log');
-        return stored ? JSON.parse(stored) : [];
+
+    // ---- Blog: Actions via API ----
+    async function likePost(postId) {
+        try { 
+            const u = getCurrentUser();
+            await fetch(API_URL + '?action=like_blog&id=' + postId, { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user: u ? (u.fullname || u.username) : 'Anonymous' })
+            }); 
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
     }
-    
-    function displayTitleChanges() {
-        const changes = loadTitleChanges();
+
+    async function deletePost(postId) {
+        if (!confirm('Delete this memory?')) return;
+        try { await fetch(API_URL + '?action=delete_blog&id=' + postId, { method: 'DELETE' }); } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    async function submitReply(postId) {
+        const user = getCurrentUser();
+        if (!user) { alert('You must be logged in to reply'); return; }
+        const content = document.getElementById('reply-input-' + postId).value.trim();
+        if (!content) { alert('Please write a reply'); return; }
+        try {
+            await fetch(API_URL + '?action=reply_blog&id=' + postId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content, author: user.fullname || user.username, date: new Date().toISOString() })
+            });
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    async function deleteReply(postId, replyId) {
+        if (!confirm('Delete this reply?')) return;
+        try {
+            await fetch(API_URL + '?action=delete_reply&id=' + postId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ reply_id: replyId })
+            });
+        } catch(e) {}
+        displayBlogPosts(await loadBlogPosts());
+    }
+
+    function toggleReplyForm(postId) {
+        const form = document.getElementById('reply-form-' + postId);
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ---- Blog: Create post via API ----
+    document.addEventListener('DOMContentLoaded', async function() {
+        displayBlogPosts(await loadBlogPosts());
+
+        document.getElementById('post-memory').addEventListener('click', async function() {
+            const content = document.getElementById('blog-content').value.trim();
+            if (!content) { alert('Please write a memory to share'); return; }
+            const user = getCurrentUser();
+            if (!user) { alert('You must be logged in to post'); return; }
+            try {
+                await fetch(API_URL + '?action=create_blog', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title: '', content, author: user.fullname || user.username, date: new Date().toISOString() })
+                });
+                document.getElementById('blog-content').value = '';
+                displayBlogPosts(await loadBlogPosts());
+            } catch(e) { alert('Error posting memory.'); }
+        });
+    });
+
+    // ---- Title Changes: Load from API ----
+    async function loadTitleChanges() {
+        try {
+            const r = await fetch(API_URL + '?action=get_title_changes');
+            if (!r.ok) return [];
+            return await r.json();
+        } catch(e) { return []; }
+    }
+
+    async function displayTitleChanges() {
+        const changes = await loadTitleChanges();
         const container = document.getElementById('title-changes-log');
-        
         if (!container) return;
-        
         if (changes.length === 0) {
             container.innerHTML = '<div class="no-title-changes">No title changes yet</div>';
             return;
         }
-        
-        container.innerHTML = changes.slice(0, 20).map(change => {
-            const recipeLink = change.recipeUrl ? `<a href="${change.recipeUrl}" class="view-recipe-link">View Recipe →</a>` : '';
-            
+        container.innerHTML = changes.slice(0, 20).map(c => {
+            const from = c.old_title || c.from || '';
+            const to   = c.new_title || c.to   || '';
+            const who  = c.changed_by || c.user || '';
+            const when = c.changed_at || c.timestamp || c.date || '';
             return `
             <div class="title-change-item">
-                <div class="change-time">${change.formatted_time || formatDate(change.date)}</div>
-                <div class="change-user">👤 ${escapeHtml(change.user)}</div>
+                <div class="change-time">${formatDate(when)}</div>
+                <div class="change-user">👤 ${escapeHtml(who)}</div>
                 <div class="change-details">
-                    <span class="old-title">❌ ${escapeHtml(change.from)}</span>
-                    <span class="new-title">✓ ${escapeHtml(change.to)}</span>
+                    <span class="old-title">❌ ${escapeHtml(from)}</span>
+                    <span class="new-title">✓ ${escapeHtml(to)}</span>
                 </div>
-                ${recipeLink}
-            </div>
-        `;
+            </div>`;
         }).join('');
     }
-    
-    // Load title changes on page load
+
     document.addEventListener('DOMContentLoaded', function() {
         displayTitleChanges();
-        
-        // Refresh title changes every 30 seconds to catch updates
         setInterval(displayTitleChanges, 30000);
     });
+
+    // ---- Helpers ----
+    function formatDate(dateStr) {
+        const d = new Date(dateStr); const now = new Date();
+        const days = Math.floor((now - d) / 86400000);
+        if (days === 0) return 'Today'; if (days === 1) return 'Yesterday';
+        if (days < 7) return days + ' days ago'; return d.toLocaleDateString();
+    }
+
+    // ── Photo Import Modal ─────────────────────────────────────────
+    var IMPORT_API_BASE = '/momsrecipes/api/index.php';
+    let importImageBase64 = null;
+    let importImageMediaType = null;
+
+    function openImportModal() {
+        document.getElementById('import-modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+        loadImportMetaSelects();
+    }
+    }
+    function closeImportModal() {
+        document.getElementById('import-modal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // ── Import form: dynamic meta selects with custom option support ──────────
+    var _importMetaLoaded = false;
+    var IMPORT_META_OPTIONS = {
+        meal_type:       ['Breakfast','Lunch','Dinner','Dessert','Snack','Appetizer','Side Dish','Beverage'],
+        cuisine:         ['American','Italian','Mexican','Chinese','Japanese','French','Indian','Thai','Mediterranean','Greek','Spanish','Middle Eastern','Scandinavian','German','Other'],
+        main_ingredient: ['Chicken','Beef','Pork','Fish','Seafood','Vegetables','Pasta','Rice','Beans','Eggs','Cheese','Bread','Fruit','Nuts','Other'],
+        method:          ['Baked','Fried','Grilled','Roasted','Steamed','Boiled','Sautéed','Slow Cooker','Pressure Cooker','No-Bake','Raw','Other']
+    };
+    var _importCustomMeta = {};
+
+    async function loadImportMetaSelects() {
+        // Fetch custom options from API (only once per page load)
+        if (!_importMetaLoaded) {
+            try {
+                var r = await fetch(API_URL + '?action=get_custom_meta');
+                if (r.ok) _importCustomMeta = await r.json();
+            } catch(e) { _importCustomMeta = {}; }
+            _importMetaLoaded = true;
+        }
+        // Populate each select
+        var fields = [
+            ['ir-meal-type',  'meal_type'],
+            ['ir-cuisine',    'cuisine'],
+            ['ir-ingredient', 'main_ingredient'],
+            ['ir-method',     'method']
+        ];
+        fields.forEach(function(pair) {
+            var id = pair[0], type = pair[1];
+            var sel = document.getElementById(id);
+            if (!sel) return;
+            var current = sel.value; // preserve any already-selected value
+            sel.innerHTML = '<option value="">-- select --</option>';
+            var builtIn = IMPORT_META_OPTIONS[type] || [];
+            var custom  = (_importCustomMeta[type] || []);
+            var all = builtIn.concat(custom.filter(function(v){ return !builtIn.includes(v); })).sort();
+            all.forEach(function(opt) {
+                var o = document.createElement('option');
+                o.value = o.textContent = opt;
+                if (opt === current) o.selected = true;
+                sel.appendChild(o);
+            });
+        });
+    }
+
+    function importAddCustom(selectId, type) {
+        var entered = window.prompt('Enter a custom ' + type.replace(/_/g, ' ') + ':');
+        if (!entered || !entered.trim()) return;
+        entered = entered.trim();
+        // Save to API
+        var user = getCurrentUser();
+        fetch(API_URL + '?action=add_custom_meta', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ field_type: type, value: entered, added_by: user ? user.username : 'anonymous' })
+        }).catch(function(){});
+        // Add to local cache
+        if (!_importCustomMeta[type]) _importCustomMeta[type] = [];
+        if (!_importCustomMeta[type].includes(entered)) _importCustomMeta[type].push(entered);
+        // Add to select and select it
+        var sel = document.getElementById(selectId);
+        if (!sel) return;
+        var newOpt = document.createElement('option');
+        newOpt.value = newOpt.textContent = entered;
+        newOpt.selected = true;
+        sel.appendChild(newOpt);
+    }
+    function handleImportOverlayClick(e) {
+        if (e.target === document.getElementById('import-modal')) closeImportModal();
+    }
+    (function() {
+        var dz = document.getElementById('import-drop-zone');
+        if (!dz) return;
+        dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', function() { dz.classList.remove('dragover'); });
+        dz.addEventListener('drop', function(e) {
+            e.preventDefault(); dz.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) importLoadFile(e.dataTransfer.files[0]);
+        });
+    })();
+    function importHandleFile(e) { if (e.target.files[0]) importLoadFile(e.target.files[0]); }
+    function importLoadFile(file) {
+        if (!file.type.startsWith('image/')) { importShowStatus('import-status','Please upload an image file.','error'); return; }
+        importImageMediaType = (file.type === 'image/jpg') ? 'image/jpeg' : file.type;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            importImageBase64 = ev.target.result.split(',')[1];
+            document.getElementById('import-preview-img').src = ev.target.result;
+            document.getElementById('import-drop-content').style.display = 'none';
+            document.getElementById('import-preview-wrap').style.display = 'block';
+            document.getElementById('import-extract-btn').disabled = false;
+            importHideStatus('import-status');
+        };
+        reader.readAsDataURL(file);
+    }
+    function importResetPhoto() {
+        importImageBase64 = null; importImageMediaType = null;
+        document.getElementById('import-file-input').value = '';
+        document.getElementById('import-drop-content').style.display = 'block';
+        document.getElementById('import-preview-wrap').style.display = 'none';
+        document.getElementById('import-extract-btn').disabled = true;
+    }
+    function importGoBack() {
+        document.getElementById('import-step-review').style.display = 'none';
+        document.getElementById('import-step-upload').style.display = 'block';
+    }
+    async function importExtract() {
+        if (!importImageBase64) return;
+        var extra = document.getElementById('import-extra-prompt').value.trim();
+        var btn = document.getElementById('import-extract-btn');
+        btn.disabled = true; btn.textContent = '⏳ Extracting…';
+        importShowStatus('import-status','Sending to Claude — this may take 10–20 seconds…','info');
+        try {
+            var r = await fetch(IMPORT_API_BASE + '?action=import_recipe', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    image_base64: importImageBase64,
+                    image_media_type: importImageMediaType,
+                    extra_prompt: extra
+                })
+            });
+            if (!r.ok) { var er=await r.json().catch(function(){return{};}); throw new Error(er.error||'API error '+r.status); }
+            var data = await r.json();
+            var recipe = data.recipe;
+            if (!recipe) throw new Error('No recipe returned from server');
+            importPopulateReview(recipe);
+            document.getElementById('import-step-upload').style.display = 'none';
+            document.getElementById('import-step-review').style.display = 'block';
+            importHideStatus('import-status');
+        } catch(err) { importShowStatus('import-status','Error: '+err.message,'error'); }
+        finally { btn.disabled=false; btn.textContent='✨ Extract Recipe'; }
+    }
+    function importPopulateReview(recipe) {
+        document.getElementById('ir-title').value       = recipe.title||'';
+        document.getElementById('ir-from').value        = recipe.family_source||'';
+        document.getElementById('ir-ingredients').value = (recipe.ingredients||[]).join('\n');
+        document.getElementById('ir-directions').value  = (recipe.directions||[]).join('\n');
+        document.getElementById('ir-notes').value       = recipe.notes||'';
+        [['ir-meal-type','meal_type'],['ir-cuisine','cuisine'],['ir-ingredient','main_ingredient'],['ir-method','method']].forEach(function(p) {
+            var val = recipe[p[1]] || '';
+            var el  = document.getElementById(p[0]);
+            if (!val) return;
+            // Try to find a matching option (case-insensitive)
+            var opt = Array.from(el.options).find(function(o){ return o.value.toLowerCase() === val.toLowerCase(); });
+            if (opt) {
+                el.value = opt.value;
+            } else {
+                // AI returned a value not yet in the list — add it
+                var newOpt = document.createElement('option');
+                newOpt.value = newOpt.textContent = val;
+                newOpt.selected = true;
+                el.appendChild(newOpt);
+            }
+        });
+    }
+    async function importSave() {
+        var title = document.getElementById('ir-title').value.trim();
+        if (!title) { importShowStatus('import-save-status','Please enter a recipe title.','error'); return; }
+        var btn = document.getElementById('import-save-btn');
+        btn.disabled=true; btn.textContent='⏳ Saving…';
+        importShowStatus('import-save-status','Saving to database…','info');
+        var ing = document.getElementById('ir-ingredients').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+        var dir = document.getElementById('ir-directions').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+        var u = getCurrentUser();
+        var payload = {
+            title:title, family_source:document.getElementById('ir-from').value.trim(),
+            meal_type:document.getElementById('ir-meal-type').value, cuisine:document.getElementById('ir-cuisine').value,
+            main_ingredient:document.getElementById('ir-ingredient').value, method:document.getElementById('ir-method').value,
+            ingredients:ing, directions:dir, notes:document.getElementById('ir-notes').value.trim(),
+            uuid:(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)),
+            contributor:u?(u.username||'anonymous'):'anonymous',
+            image_data:importImageBase64||'', image_filename:importImageBase64?'imported_recipe.jpg':''
+        };
+        try {
+            var r = await fetch(API_URL+'?action=create_recipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+            if (!r.ok) { var er=await r.json().catch(function(){return{};}); throw new Error(er.error||'Save failed ('+r.status+')'); }
+            var saved=await r.json(), newId=(saved.recipe&&saved.recipe.id)||saved.id||payload.uuid;
+            var rec=Object.assign({},payload,{id:newId,url:'recipes/'+payload.uuid+'.html'});
+            allRecipes.unshift(rec); filteredRecipes=allRecipes.slice(); populateFilters(); displayRecipes();
+            importShowStatus('import-save-status','✅ Recipe saved!','success');
+            btn.textContent='✅ Saved!';
+            setTimeout(function(){
+                closeImportModal(); importResetPhoto();
+                document.getElementById('import-step-review').style.display='none';
+                document.getElementById('import-step-upload').style.display='block';
+                document.getElementById('import-extra-prompt').value='';
+                btn.textContent='💾 Save to Database'; btn.disabled=false;
+                importHideStatus('import-save-status');
+            },2200);
+        } catch(err) { importShowStatus('import-save-status','Error: '+err.message,'error'); btn.disabled=false; btn.textContent='💾 Save to Database'; }
+    }
+    function importShowStatus(id,msg,type){var el=document.getElementById(id);if(!el)return;el.textContent=msg;el.className='import-status '+type;el.style.display='block';}
+    function importHideStatus(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
     </script>
 </body>
 </html>

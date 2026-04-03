@@ -9,6 +9,7 @@ const mealTypeFilter = document.getElementById('meal-type');
 const cuisineFilter = document.getElementById('cuisine');
 const ingredientFilter = document.getElementById('ingredient');
 const methodFilter = document.getElementById('method');
+const fromSourceFilter = document.getElementById('from-source');
 const clearButton = document.getElementById('clear-filters');
 const recipeGrid = document.getElementById('recipe-grid');
 const recipeCount = document.getElementById('recipe-count');
@@ -16,8 +17,8 @@ const recipeCount = document.getElementById('recipe-count');
 // Load recipes on page load
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('Loading recipes from recipes.json...');
-        const response = await fetch('recipes.json');
+        console.log('Loading recipes from API...');
+        const response = await fetch('api/index.php?action=get_recipes_search');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -29,9 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`Loaded ${allRecipes.length} recipes`);
         
         populateFilters();
-        
-        // Restore filter state from URL params (preserves state on back button)
-        restoreFilterState();
+        displayRecipes();
         
         // Add event listeners
         searchInput.addEventListener('input', filterRecipes);
@@ -39,125 +38,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         cuisineFilter.addEventListener('change', filterRecipes);
         ingredientFilter.addEventListener('change', filterRecipes);
         methodFilter.addEventListener('change', filterRecipes);
+        fromSourceFilter.addEventListener('change', filterRecipes);
         clearButton.addEventListener('click', clearAllFilters);
         
     } catch (error) {
-        console.error('Error loading recipes:', error);
-        
-        let errorMsg = 'Error loading recipes: ' + error.message;
-        
-        // Check if it's a CORS/file protocol error
-        if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-            errorMsg += '<br><br><strong>Solution:</strong> You cannot open the HTML file directly (file:// protocol).<br>' +
-                       'Please use a local web server:<br><br>' +
-                       '1. Open Terminal/Command Prompt<br>' +
-                       '2. Navigate to: recipe_cards/website/momsrecipes<br>' +
-                       '3. Run: python -m http.server 8000<br>' +
-                       '4. Open browser to: http://localhost:8000/';
-        } else if (error.message.includes('404')) {
-            errorMsg += '<br><br><strong>Problem:</strong> recipes.json file not found.<br>' +
-                       'Make sure recipes.json exists in the momsrecipes folder.';
+        console.warn('API unavailable, trying static recipes.json fallback...', error.message);
+        try {
+            const fallback = await fetch('recipes.json');
+            if (!fallback.ok) throw new Error('recipes.json not found');
+            allRecipes = await fallback.json();
+            filteredRecipes = [...allRecipes];
+            console.log(`Loaded ${allRecipes.length} recipes from static fallback`);
+            populateFilters();
+            displayRecipes();
+            searchInput.addEventListener('input', filterRecipes);
+            mealTypeFilter.addEventListener('change', filterRecipes);
+            cuisineFilter.addEventListener('change', filterRecipes);
+            ingredientFilter.addEventListener('change', filterRecipes);
+            methodFilter.addEventListener('change', filterRecipes);
+            fromSourceFilter.addEventListener('change', filterRecipes);
+            clearButton.addEventListener('click', clearAllFilters);
+        } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+            recipeGrid.innerHTML = '<div style="color: white; background: rgba(255,0,0,0.2); padding: 30px; border-radius: 10px; border: 2px solid #ff6b6b;">Error loading recipes. Run the pipeline to generate recipes.json.</div>';
         }
-        
-        recipeGrid.innerHTML = '<div style="color: white; background: rgba(255,0,0,0.2); padding: 30px; border-radius: 10px; border: 2px solid #ff6b6b;">' + errorMsg + '</div>';
     }
 });
-
-// Save filter state to URL query params (so back button preserves filters)
-function saveFilterState() {
-    const params = new URLSearchParams();
-    if (searchInput.value) params.set('q', searchInput.value);
-    if (mealTypeFilter.value) params.set('meal', mealTypeFilter.value);
-    if (cuisineFilter.value) params.set('cuisine', cuisineFilter.value);
-    if (ingredientFilter.value) params.set('ing', ingredientFilter.value);
-    if (methodFilter.value) params.set('method', methodFilter.value);
-    
-    const newUrl = params.toString() 
-        ? window.location.pathname + '?' + params.toString()
-        : window.location.pathname;
-    
-    // replaceState so we don't create extra history entries for each keystroke
-    history.replaceState(null, '', newUrl);
-}
-
-// Restore filter state from URL query params
-function restoreFilterState() {
-    const params = new URLSearchParams(window.location.search);
-    
-    if (params.has('q')) searchInput.value = params.get('q');
-    if (params.has('meal')) mealTypeFilter.value = params.get('meal');
-    if (params.has('cuisine')) cuisineFilter.value = params.get('cuisine');
-    if (params.has('ing')) ingredientFilter.value = params.get('ing');
-    if (params.has('method')) methodFilter.value = params.get('method');
-    
-    // Apply filters (don't save state again — we just loaded it)
-    filterRecipesNoSave();
-}
-
-// Filter without saving state (used on restore to avoid circular save)
-function filterRecipesNoSave() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const mealType = mealTypeFilter.value;
-    const cuisine = cuisineFilter.value;
-    const ingredient = ingredientFilter.value;
-    const method = methodFilter.value;
-    
-    filteredRecipes = allRecipes.filter(recipe => {
-        let currentTitle = recipe.title;
-        const recipeId = recipe.uuid || recipe.id;
-        if (recipeId) {
-            try {
-                let savedRecipe = localStorage.getItem('momsrecipes_recipe_' + recipeId);
-                if (!savedRecipe) {
-                    savedRecipe = localStorage.getItem('recipe_' + recipeId);
-                }
-                if (savedRecipe) {
-                    const parsed = JSON.parse(savedRecipe);
-                    if (parsed.title) {
-                        currentTitle = parsed.title;
-                    }
-                }
-            } catch (e) {}
-        }
-        
-        const matchesSearch = !searchTerm || 
-            currentTitle.toLowerCase().includes(searchTerm) ||
-            (recipe.family_source && recipe.family_source.toLowerCase().includes(searchTerm));
-        
-        const matchesMealType = !mealType || recipe.meal_type === mealType;
-        const matchesCuisine = !cuisine || recipe.cuisine === cuisine;
-        const matchesIngredient = !ingredient || recipe.main_ingredient === ingredient;
-        const matchesMethod = !method || recipe.method === method;
-        
-        return matchesSearch && matchesMealType && matchesCuisine && 
-               matchesIngredient && matchesMethod;
-    });
-    
-    displayRecipes();
-}
 
 function populateFilters() {
     const mealTypes = new Set();
     const cuisines = new Set();
     const ingredients = new Set();
     const methods = new Set();
+    const sources = new Set();
     
-    // Get custom options from localStorage
-    const customOptions = JSON.parse(localStorage.getItem('momsrecipes_custom_meta_options') || '{}');
-    
-    // Add custom options to sets
-    if (customOptions.meal_type) {
-        customOptions.meal_type.forEach(opt => mealTypes.add(opt));
-    }
-    if (customOptions.cuisine) {
-        customOptions.cuisine.forEach(opt => cuisines.add(opt));
-    }
-    if (customOptions.main_ingredient) {
-        customOptions.main_ingredient.forEach(opt => ingredients.add(opt));
-    }
-    if (customOptions.method) {
-        customOptions.method.forEach(opt => methods.add(opt));
-    }
+    // Custom options already merged into allRecipes from API — no localStorage needed
     
     // Add recipe values
     allRecipes.forEach(recipe => {
@@ -165,12 +80,14 @@ function populateFilters() {
         if (recipe.cuisine) cuisines.add(recipe.cuisine);
         if (recipe.main_ingredient) ingredients.add(recipe.main_ingredient);
         if (recipe.method) methods.add(recipe.method);
+        if (recipe.family_source) sources.add(recipe.family_source);
     });
     
     populateSelect(mealTypeFilter, Array.from(mealTypes).sort());
     populateSelect(cuisineFilter, Array.from(cuisines).sort());
     populateSelect(ingredientFilter, Array.from(ingredients).sort());
     populateSelect(methodFilter, Array.from(methods).sort());
+    populateSelect(fromSourceFilter, Array.from(sources).sort());
 }
 
 // Listen for custom meta options being added on recipe pages
@@ -178,7 +95,7 @@ window.addEventListener('customMetaOptionAdded', function(e) {
     console.log('New custom option added:', e.detail);
     // Refresh filters to include the new option
     // Clear existing options (except "All X" default)
-    [mealTypeFilter, cuisineFilter, ingredientFilter, methodFilter].forEach(filter => {
+    [mealTypeFilter, cuisineFilter, ingredientFilter, methodFilter, fromSourceFilter].forEach(filter => {
         while (filter.options.length > 1) {
             filter.remove(1);
         }
@@ -203,29 +120,10 @@ function filterRecipes() {
     const cuisine = cuisineFilter.value;
     const ingredient = ingredientFilter.value;
     const method = methodFilter.value;
+    const fromSource = fromSourceFilter.value;
     
     filteredRecipes = allRecipes.filter(recipe => {
-        // Get current title from localStorage if it exists
-        let currentTitle = recipe.title;
-        const recipeId = recipe.uuid || recipe.id;
-        if (recipeId) {
-            try {
-                // Try new UUID-based key first
-                let savedRecipe = localStorage.getItem('momsrecipes_recipe_' + recipeId);
-                // Fall back to old key
-                if (!savedRecipe) {
-                    savedRecipe = localStorage.getItem('recipe_' + recipeId);
-                }
-                if (savedRecipe) {
-                    const parsed = JSON.parse(savedRecipe);
-                    if (parsed.title) {
-                        currentTitle = parsed.title;
-                    }
-                }
-            } catch (e) {
-                // If error, use original title
-            }
-        }
+        const currentTitle = recipe.title;
         
         const matchesSearch = !searchTerm || 
             currentTitle.toLowerCase().includes(searchTerm) ||
@@ -235,13 +133,12 @@ function filterRecipes() {
         const matchesCuisine = !cuisine || recipe.cuisine === cuisine;
         const matchesIngredient = !ingredient || recipe.main_ingredient === ingredient;
         const matchesMethod = !method || recipe.method === method;
+        const matchesSource = !fromSource || recipe.family_source === fromSource;
         
         return matchesSearch && matchesMealType && matchesCuisine && 
-               matchesIngredient && matchesMethod;
+               matchesIngredient && matchesMethod && matchesSource;
     });
     
-    // Save filter state to URL so back button preserves it
-    saveFilterState();
     displayRecipes();
 }
 
@@ -278,27 +175,6 @@ function createRecipeCard(recipe) {
     
     // Check localStorage for updated title (uses UUID if available)
     let displayTitle = recipe.title;
-    const recipeId = recipe.uuid || recipe.id;
-    if (recipeId) {
-        try {
-            // Try new UUID-based key first
-            let savedRecipe = localStorage.getItem('momsrecipes_recipe_' + recipeId);
-            // Fall back to old key
-            if (!savedRecipe) {
-                savedRecipe = localStorage.getItem('recipe_' + recipeId);
-            }
-            if (savedRecipe) {
-                const parsed = JSON.parse(savedRecipe);
-                if (parsed.title) {
-                    displayTitle = parsed.title;
-                }
-            }
-        } catch (e) {
-            // If error, use original title
-            console.log('Could not load saved recipe:', e);
-        }
-    }
-    
     const title = document.createElement('h3');
     title.className = 'recipe-card-title';
     title.textContent = displayTitle;
@@ -319,7 +195,15 @@ function createRecipeCard(recipe) {
         meta.appendChild(createTag(recipe.method, 'method'));
     }
     
-    card.appendChild(title);
+    if (recipe.family_source) {
+        const fromEl = document.createElement('div');
+        fromEl.className = 'recipe-card-from';
+        fromEl.textContent = 'From: ' + recipe.family_source;
+        card.appendChild(title);
+        card.appendChild(fromEl);
+    } else {
+        card.appendChild(title);
+    }
     card.appendChild(meta);
     link.appendChild(card);
     
@@ -339,7 +223,6 @@ function clearAllFilters() {
     cuisineFilter.value = '';
     ingredientFilter.value = '';
     methodFilter.value = '';
-    // Clear URL params
-    history.replaceState(null, '', window.location.pathname);
-    filterRecipesNoSave();
+    fromSourceFilter.value = '';
+    filterRecipes();
 }
