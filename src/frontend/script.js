@@ -30,23 +30,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     fromSourceFilter = document.getElementById('from-source');
 
     try {
-        console.log('Loading recipes from API...');
-        const response = await fetch(`${API_BASE}?action=get_recipes_search`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        allRecipes = await response.json();
+        // Check session cache first — avoids a round-trip on back-navigation
+        const cached = getCachedRecipes();
+        const username = getCurrentUsername();
+
+        // Fire recipes + social data in parallel; don't wait for social before rendering
+        const recipesPromise = cached
+            ? Promise.resolve(cached)
+            : fetch(`${API_BASE}?action=get_recipes_search`)
+                .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+
+        const socialPromise = username ? loadSocialData() : Promise.resolve();
+
+        // Render as soon as recipes arrive — don't block on social data
+        allRecipes = await recipesPromise;
+        if (!cached) setCachedRecipes(allRecipes);
         filteredRecipes = [...allRecipes];
-        
-        console.log(`Loaded ${allRecipes.length} recipes`);
-        
-        // Load favorites & reactions for the current user
-        await loadSocialData();
 
         populateFilters();
-        displayRecipes();
+        displayRecipes();   // renders immediately with hearts in default state
+
+        // Social data fills in hearts/reactions on existing cards — no re-render
+        socialPromise.then(() => {
+            patchSocialOnCards();
+        }).catch(() => {});
         
         // Add event listeners
         searchInput.addEventListener('input', filterRecipes);
@@ -96,7 +103,30 @@ function getCurrentUsername() {
 }
 
 function isPaul() {
-    return getCurrentUsername().toLowerCase() === 'paul';
+    const u = getCurrentUsername().toLowerCase();
+    return u === 'paul' || u === 'pstamey';
+}
+
+// ── Session cache helpers ────────────────────────────────────────────────────
+const CACHE_KEY = 'momsrecipes_recipes_cache';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedRecipes() {
+    try {
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const { ts, data } = JSON.parse(raw);
+        if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_KEY); return null; }
+        return data;
+    } catch(e) { return null; }
+}
+
+function setCachedRecipes(data) {
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+}
+
+function invalidateRecipeCache() {
+    sessionStorage.removeItem(CACHE_KEY);
 }
 
 async function deleteRecipe(recipeId, recipeTitle, cardElement, event) {
@@ -132,6 +162,7 @@ async function deleteRecipe(recipeId, recipeTitle, cardElement, event) {
                 const data = await resp.json();
                 if (resp.ok && data.success) {
                     // Remove from local arrays and re-render
+                    invalidateRecipeCache();
                     allRecipes = allRecipes.filter(r => r.id !== recipeId);
                     filteredRecipes = filteredRecipes.filter(r => r.id !== recipeId);
                     if (cardElement) cardElement.remove();
@@ -167,6 +198,48 @@ async function loadSocialData() {
     } catch(e) {
         console.warn('Could not load social data:', e);
     }
+}
+
+// Patch heart/reaction state onto already-rendered cards without re-rendering
+function patchSocialOnCards() {
+    document.querySelectorAll('.recipe-card').forEach(link => {
+        const card = link.querySelector('div');
+        if (!card) return;
+        const uuid = link.dataset.uuid || '';
+        if (!uuid) return;
+
+        // Update heart button
+        const heartBtn = card.querySelector('.fav-btn');
+        if (heartBtn) {
+            const isFav = myFavorites.has(uuid);
+            heartBtn.classList.toggle('favorited', isFav);
+            heartBtn.title = isFav ? 'Remove from favorites' : 'Add to favorites';
+        }
+
+        // Update or inject reaction bar
+        const reactions = allReactions[uuid] || {};
+        const hasReactions = Object.values(reactions).some(c => c > 0);
+        let bar = card.querySelector('.reaction-bar');
+        if (hasReactions) {
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.className = 'reaction-bar';
+                card.appendChild(bar);
+            }
+            bar.innerHTML = '';
+            ['❤️','😋','⭐','👍'].forEach(emoji => {
+                const count = reactions[emoji] || 0;
+                if (count > 0) {
+                    const chip = document.createElement('span');
+                    chip.className = 'reaction-chip';
+                    chip.textContent = `${emoji} ${count}`;
+                    bar.appendChild(chip);
+                }
+            });
+        } else if (bar) {
+            bar.remove();
+        }
+    });
 }
 
 async function toggleFavorite(uuid, btn, event) {
@@ -319,27 +392,41 @@ function sortRecipes(recipes) {
 
 function displayRecipes() {
     recipeGrid.innerHTML = '';
-    
+
     if (filteredRecipes.length === 0) {
         recipeGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);"><p style="color: #666; margin: 0; font-size: 1.1em;">No recipes found. Try adjusting your filters.</p></div>';
         recipeCount.textContent = '0 recipes';
         return;
     }
-    
+
     const sorted = sortRecipes(filteredRecipes);
-    sorted.forEach(recipe => {
-        const card = createRecipeCard(recipe);
-        recipeGrid.appendChild(card);
-    });
-    
-    const count = filteredRecipes.length;
+    const count = sorted.length;
     recipeCount.textContent = `${count} recipe${count !== 1 ? 's' : ''}`;
+
+    // Render first 40 cards synchronously so the page feels instant
+    const FIRST_BATCH = 40;
+    const firstBatch = sorted.slice(0, FIRST_BATCH);
+    const fragment = document.createDocumentFragment();
+    firstBatch.forEach(recipe => fragment.appendChild(createRecipeCard(recipe)));
+    recipeGrid.appendChild(fragment);
+
+    // Render the rest during idle time so the browser stays responsive
+    if (sorted.length > FIRST_BATCH) {
+        const remaining = sorted.slice(FIRST_BATCH);
+        const schedule = window.requestIdleCallback || (cb => setTimeout(cb, 50));
+        schedule(() => {
+            const frag2 = document.createDocumentFragment();
+            remaining.forEach(recipe => frag2.appendChild(createRecipeCard(recipe)));
+            recipeGrid.appendChild(frag2);
+        });
+    }
 }
 
 function createRecipeCard(recipe) {
     const link = document.createElement('a');
     link.href = getRecipeUrl(recipe);
     link.className = 'recipe-card';
+    link.dataset.uuid = recipe.uuid || '';
     
     if (recipe.meal_type) {
         const mealSlug = recipe.meal_type.toLowerCase().replace(/\s+/g, '-');

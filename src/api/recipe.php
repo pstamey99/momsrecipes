@@ -78,6 +78,7 @@ if (count($allImageSrcs) > 0) {
                              class="clickable-image carousel-image"
                              data-image-index="' . $idx . '">
                         <button class="replace-image-btn" onclick="replaceImage(this)">Replace</button>
+                        <button class="edit-image-btn"    onclick="editImage(this)">✏ Edit</button>
                         <button class="delete-image-btn" onclick="deleteImage(this)">Delete</button>
                     </div>';
     }
@@ -140,11 +141,11 @@ if ($recipe['family_source']) {
 // Contributor (who digitized it — editable by Paul only)
 if ($recipe['contributor']) {
     $contributorHtml = '<div class="source-field"><label class="source-label">Added by:</label>'
-                     . '<span id="contributor-field" class="source editable-meta editable-contributor" data-type="contributor" title="Click to edit (Paul only)">'
+                     . '<span id="contributor-field" class="source editable-meta editable-contributor" data-type="contributor" title="Click to edit">'
                      . e($recipe['contributor']) . '</span></div>';
 } else {
     $contributorHtml = '<div class="source-field"><label class="source-label">Added by:</label>'
-                     . '<span id="contributor-field" class="source editable-meta editable-contributor empty" data-type="contributor" title="Click to add (Paul only)">+ Add Contributor</span></div>';
+                     . '<span id="contributor-field" class="source editable-meta editable-contributor empty" data-type="contributor" title="Click to add">+ Add Contributor</span></div>';
 }
 
 // Notes
@@ -206,6 +207,7 @@ $allContributorsJson = json_encode($allContributors, JSON_HEX_TAG);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $recipeTitle ?> - Mom's Recipes</title>
     <link rel="stylesheet" href="<?= $basePath ?>/styles.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
     <style>
         .edit-controls { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; display: flex; gap: 10px; flex-wrap: wrap; }
         .edit-btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.3s; }
@@ -295,11 +297,28 @@ $allContributorsJson = json_encode($allContributors, JSON_HEX_TAG);
         .carousel-footer { margin-top: 8px; text-align: center; }
         .add-image-btn { padding: 8px 16px; background: #27AE60; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9em; }
         .add-image-btn:hover { background: #229954; }
-        .replace-image-btn, .delete-image-btn { position: absolute; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 0.8em; }
+        .replace-image-btn, .delete-image-btn, .edit-image-btn { position: absolute; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 0.8em; }
         .replace-image-btn { bottom: 10px; left: 10px; }
+        .edit-image-btn    { bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(41,128,185,0.85); }
         .delete-image-btn  { bottom: 10px; right: 10px; background: rgba(220,53,69,0.8); }
         .replace-image-btn:hover { background: rgba(0,0,0,0.85); }
+        .edit-image-btn:hover    { background: rgba(21,108,165,0.95); }
         .delete-image-btn:hover  { background: rgba(185,28,28,0.95); }
+
+        /* ── Image editor modal ── */
+        #img-editor-modal { display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.88); flex-direction:column; align-items:center; justify-content:center; }
+        #img-editor-modal.active { display:flex; }
+        #img-editor-wrap { position:relative; max-width:90vw; max-height:70vh; width:700px; }
+        #img-editor-wrap img { display:block; max-width:100%; max-height:70vh; }
+        .editor-toolbar { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; justify-content:center; }
+        .editor-toolbar button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-size:0.9em; color:white; }
+        .editor-btn-rotate { background:#7f8c8d; }
+        .editor-btn-flip-h { background:#7f8c8d; }
+        .editor-btn-flip-v { background:#7f8c8d; }
+        .editor-btn-reset  { background:#e67e22; }
+        .editor-btn-save   { background:#27ae60; font-weight:bold; padding:8px 28px; }
+        .editor-btn-cancel { background:#c0392b; }
+        .editor-toolbar button:hover { filter:brightness(1.15); }
         .no-image-placeholder { height: 200px; background: #f0e6d6; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; color: #8B4513; }
         .carousel-slide.dragging  { opacity: 0.4; cursor: grabbing; }
         .carousel-slide.drag-over { outline: 3px dashed #8B4513; outline-offset: -3px; }
@@ -591,17 +610,36 @@ $allContributorsJson = json_encode($allContributors, JSON_HEX_TAG);
         }
 
         // ── Editable meta tags ─────────────────────────────────────────────
-        function initMetaTagEditing() {
-            // Mark contributor field as paul-editable (or leave locked)
-            const contribEl = document.getElementById('contributor-field');
-            if (contribEl) {
-                if (isPaulUser()) {
-                    contribEl.classList.add('paul-editable');
-                    contribEl.title = 'Click to edit';
-                } else {
-                    contribEl.title = 'Only Paul can edit this';
-                }
+        let _canEditContributor = false; // set after check_admin resolves
+
+        async function _checkContributorAccess() {
+            const user = getCurrentUser();
+            if (!user || !user.username) return false;
+            try {
+                const resp = await fetch(API_URL + '?action=check_admin&username=' + encodeURIComponent(user.username));
+                const data = await resp.json();
+                // Super admin or admin can edit contributor
+                return data.is_admin === true || data.is_super_admin === true;
+            } catch(e) {
+                // Fallback: allow paul/pstamey by name if API call fails
+                return isPaulUser();
             }
+        }
+
+        function initMetaTagEditing() {
+            // Async: check admin status then unlock contributor field if allowed
+            _checkContributorAccess().then(allowed => {
+                _canEditContributor = allowed;
+                const contribEl = document.getElementById('contributor-field');
+                if (contribEl) {
+                    if (allowed) {
+                        contribEl.classList.add('paul-editable');
+                        contribEl.title = 'Click to edit';
+                    } else {
+                        contribEl.title = 'Only admins can edit this';
+                    }
+                }
+            });
 
             document.querySelectorAll('.editable-meta').forEach(el => {
                 // Clone to remove any stale listeners
@@ -610,8 +648,8 @@ $allContributorsJson = json_encode($allContributors, JSON_HEX_TAG);
                 fresh.addEventListener('click', (e) => {
                     e.stopPropagation();
 
-                    // Contributor field is Paul-only
-                    if (fresh.dataset.type === 'contributor' && !isPaulUser()) return;
+                    // Contributor field is admin-only
+                    if (fresh.dataset.type === 'contributor' && !_canEditContributor) return;
 
                     document.querySelectorAll('.meta-dropdown').forEach(d => d.remove());
                     const type = fresh.dataset.type;
@@ -732,7 +770,9 @@ $allContributorsJson = json_encode($allContributors, JSON_HEX_TAG);
 
         function isPaulUser() {
             const user = getCurrentUser();
-            return user && user.username && user.username.toLowerCase() === 'paul';
+            if (!user || !user.username) return false;
+            const u = user.username.toLowerCase();
+            return u === 'paul' || u === 'pstamey';
         }
 
         async function selectMetaValue(el, type, value) {
@@ -1020,6 +1060,7 @@ $allContributorsJson = json_encode($allContributors, JSON_HEX_TAG);
             slide.innerHTML = `
                 <img src="${src}" alt="" class="clickable-image carousel-image">
                 <button class="replace-image-btn" onclick="replaceImage(this)">Replace</button>
+                <button class="edit-image-btn"    onclick="editImage(this)">✏ Edit</button>
                 <button class="delete-image-btn" onclick="deleteImage(this)">Delete</button>`;
             slide.querySelector('.clickable-image').addEventListener('click', _openFullscreen);
             _attachDrag(slide);
@@ -1322,6 +1363,144 @@ $allContributorsJson = json_encode($allContributors, JSON_HEX_TAG);
             });
             loadSocialState();
         });
+    </script>
+
+    <!-- ── Cropper.js ── -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+
+    <!-- ── Image editor modal ── -->
+    <div id="img-editor-modal">
+        <div id="img-editor-wrap">
+            <img id="img-editor-src" src="" alt="Edit image">
+        </div>
+        <div class="editor-toolbar">
+            <button class="editor-btn-rotate" onclick="_editorRotate(-90)">↺ Rotate L</button>
+            <button class="editor-btn-rotate" onclick="_editorRotate(90)">↻ Rotate R</button>
+            <button class="editor-btn-flip-h" onclick="_editorFlip('h')">⇄ Flip H</button>
+            <button class="editor-btn-flip-v" onclick="_editorFlip('v')">↕ Flip V</button>
+            <button class="editor-btn-reset"  onclick="_editorReset()">⟳ Reset</button>
+            <button class="editor-btn-save"   onclick="_editorSave()">✓ Save</button>
+            <button class="editor-btn-cancel" onclick="_editorClose()">✕ Cancel</button>
+        </div>
+    </div>
+
+    <script>
+    // ── Image editor (Cropper.js) ───────────────────────────────────────────
+    let _cropper      = null;
+    let _editSlide    = null;   // the .carousel-slide being edited
+    let _editFilename = null;
+
+    async function editImage(btn) {
+        const slide = btn.closest('.carousel-slide');
+        if (!slide) return;
+        const img = slide.querySelector('img');
+        if (!img || !img.src) return;
+        _editSlide    = slide;
+        _editFilename = slide.dataset.filename;
+
+        document.getElementById('img-editor-modal').classList.add('active');
+
+        // Destroy previous instance if any
+        if (_cropper) { _cropper.destroy(); _cropper = null; }
+
+        const editorImg = document.getElementById('img-editor-src');
+
+        // Fetch image as blob URL so getCroppedCanvas() never hits canvas taint errors
+        try {
+            const fetchResp = await fetch(img.src);
+            const blob = await fetchResp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            if (editorImg._blobUrl) URL.revokeObjectURL(editorImg._blobUrl);
+            editorImg._blobUrl = blobUrl;
+            editorImg.src = blobUrl;
+        } catch(e) {
+            editorImg.src = img.src; // fallback
+        }
+
+        editorImg.onload = () => {
+            if (_cropper) { _cropper.destroy(); _cropper = null; }
+            _cropper = new Cropper(editorImg, {
+                viewMode: 1,
+                autoCropArea: 0.9,
+                responsive: true,
+                checkOrientation: false
+            });
+        };
+    }
+
+    function _editorRotate(deg) { _cropper && _cropper.rotate(deg); }
+    function _editorFlip(axis) {
+        if (!_cropper) return;
+        const d = _cropper.getData();
+        if (axis === 'h') _cropper.scaleX(d.scaleX === -1 ? 1 : -1);
+        else              _cropper.scaleY(d.scaleY === -1 ? 1 : -1);
+    }
+    function _editorReset() { _cropper && _cropper.reset(); }
+
+    function _editorClose() {
+        document.getElementById('img-editor-modal').classList.remove('active');
+        if (_cropper) { _cropper.destroy(); _cropper = null; }
+        _editSlide = _editFilename = null;
+    }
+
+    async function _editorSave() {
+        if (!_cropper || !_editSlide || !_editFilename) {
+            console.error('Editor save: missing cropper, slide, or filename', { _cropper: !!_cropper, _editSlide: !!_editSlide, _editFilename });
+            return;
+        }
+
+        let canvas;
+        try {
+            canvas = _cropper.getCroppedCanvas({ maxWidth: 1600, maxHeight: 1600, imageSmoothingQuality: 'high' });
+        } catch(e) {
+            console.error('getCroppedCanvas failed:', e);
+            showToast('Could not read image for editing: ' + e.message, 'error');
+            return;
+        }
+
+        if (!canvas) {
+            console.error('getCroppedCanvas returned null');
+            showToast('Could not process image — try again', 'error');
+            return;
+        }
+
+        const base64 = canvas.toDataURL('image/jpeg', 0.88);
+        // Keep a local ref to slide/filename before closing (close resets them)
+        const savedSlide    = _editSlide;
+        const savedFilename = _editFilename;
+
+        _editorClose();
+        _showUploadOverlay('Saving edited image…');
+
+        try {
+            const user = getCurrentUser();
+            const resp = await fetch(API_URL + '?action=save_edited_image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uuid: RECIPE_ID,
+                    old_filename: savedFilename,
+                    image_data: base64,
+                    changed_by: user?.username || 'anonymous'
+                })
+            });
+            _hideUploadOverlay();
+            const data = await resp.json();
+            console.log('save_edited_image response:', data);
+            if (resp.ok && data.success) {
+                const img = savedSlide.querySelector('img');
+                if (img) img.src = API_BASE_PATH + '/images/' + data.filename + '?v=' + Date.now();
+                savedSlide.dataset.filename = data.filename;
+                showToast('Image saved!', 'success');
+            } else {
+                showToast('Save failed: ' + (data.error || 'unknown'), 'error');
+            }
+        } catch(e) {
+            _hideUploadOverlay();
+            console.error('save_edited_image fetch error:', e);
+            showToast('Save failed: ' + e.message, 'error');
+        }
+    }
     </script>
 </body>
 </html>

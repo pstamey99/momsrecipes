@@ -212,6 +212,47 @@ if ($action) {
             sendResponse(200, ['success' => true, 'filename' => $filename, 'images' => $images]);
             break;
 
+        case 'save_edited_image':
+            // Save a cropped/rotated version of an existing image, replacing the old file
+            $uuid = $input['uuid'] ?? '';
+            $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
+            if (!$id && $uuid) $id = $db->resolveRecipeId($uuid);
+            if (!$id) sendResponse(400, ['error' => 'Missing recipe id or uuid']);
+            $oldFilename = $input['old_filename'] ?? '';
+            if (empty($input['image_data'])) sendResponse(400, ['error' => 'Missing image_data']);
+
+            $base64 = $input['image_data'];
+            $base64clean = preg_replace('#^data:image/\w+;base64,#', '', $base64);
+            // Always save edited images as jpg
+            $newFilename = ($uuid ?: $id) . '_edited_' . time() . '_' . uniqid() . '.jpg';
+            $imgDir = __DIR__ . '/../images/';
+            if (!is_dir($imgDir)) mkdir($imgDir, 0755, true);
+            file_put_contents($imgDir . $newFilename, base64_decode($base64clean));
+
+            // Update DB: swap old filename for new filename wherever it appears
+            $recipe = $db->getRecipe($id);
+            if (!$recipe) sendResponse(404, ['error' => 'Recipe not found']);
+
+            $primary = $recipe['image_filename'] ?? '';
+            $extras  = json_decode($recipe['images'] ?? '[]', true) ?: [];
+
+            if ($primary === $oldFilename) {
+                $primary = $newFilename;
+            } else {
+                $extras = array_map(fn($f) => $f === $oldFilename ? $newFilename : $f, $extras);
+            }
+            $db->raw()->prepare(
+                "UPDATE recipes SET image_filename = :p, images = :imgs, updated_at = CURRENT_TIMESTAMP WHERE id = :id"
+            )->execute([':p' => $primary, ':imgs' => json_encode($extras), ':id' => $id]);
+
+            // Delete old file (best-effort)
+            if ($oldFilename && file_exists($imgDir . $oldFilename)) {
+                @unlink($imgDir . $oldFilename);
+            }
+
+            sendResponse(200, ['success' => true, 'filename' => $newFilename]);
+            break;
+
         case 'delete_image':
             // Remove an image from a recipe
             $uuid = $input['uuid'] ?? '';
@@ -456,6 +497,7 @@ if ($action) {
                     'family_source'  => $r['family_source'] ?? '',
                     'tags'           => $r['tags'] ?? '',
                     'updated_at'     => $r['updated_at'] ?? '',
+                    'created_at'     => $r['created_at'] ?? '',
                     'meal_type'      => $r['meal_type'] ?? '',
                     'cuisine'        => $r['cuisine'] ?? '',
                     'main_ingredient'=> $r['main_ingredient'] ?? '',
